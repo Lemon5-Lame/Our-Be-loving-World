@@ -1,585 +1,646 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc, query, orderBy, limit } from 'firebase/firestore';
-import { Settings, X, Image as ImageIcon, FileText, Lock, Heart, Upload, Type, Palette, MousePointer2, Bell, Frame, Layers, PartyPopper, AlertTriangle, Calendar, Plus, Camera } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Canvas - LDR Vault</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .font-handwriting { font-family: 'Caveat', cursive; }
+        .font-cursive-fancy { font-family: 'Dancing Script', cursive; }
+        .font-typewriter { font-family: 'Courier Prime', monospace; }
+        .font-typewriter-rough { font-family: 'Special Elite', system-ui; }
+        .font-vintage { font-family: 'Playfair Display', serif; }
 
-// --- Firebase Initialization ---
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'ldr-vintage-app';
-
-// --- Global Styles ---
-const globalStyles = `
-  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap');
-
-  .font-handwriting { font-family: 'Caveat', cursive; }
-  .font-typewriter { font-family: 'Courier Prime', monospace; }
-  .font-vintage { font-family: 'Playfair Display', serif; }
-
-  /* Frame Textures */
-  .frame-classic { border: 12px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 0 5px rgba(0,0,0,0.1); }
-  .frame-wood { border: 15px solid #5d4037; border-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png'); box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-  .frame-gold { border: 12px solid #d4af37; border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-  .frame-film { border: 20px solid #1a1a1a; border-left: 20px dashed #333; border-right: 20px dashed #333; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-
-  /* Multiple Color Running Function (Chroma Wave) */
-  .color-running {
-    background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shine 3s linear infinite;
-  }
-  
-  @keyframes shine {
-    to { background-position: 200% center; }
-  }
-
-  /* Marquee/Running Title */
-  .running-title-container {
-    overflow: hidden;
-    white-space: nowrap;
-    width: 100%;
-  }
-  .running-title {
-    display: inline-block;
-    padding-left: 100%;
-    animation: marquee 15s linear infinite;
-  }
-  @keyframes marquee {
-    0% { transform: translate(0, 0); }
-    100% { transform: translate(-100%, 0); }
-  }
-
-  /* Themes */
-  .theme-anime { background: url('https://images.unsplash.com/photo-1578632767115-351597cf2477?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-  .theme-cartoon { background: url('https://images.unsplash.com/photo-1635322966219-b75ed372eb01?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-  .theme-nature { background: url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-  .theme-aurora { background: url('https://images.unsplash.com/photo-1531366936337-7785a0ce5652?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-  .theme-moon { background: url('https://images.unsplash.com/photo-1532693322450-2cb5c511067d?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-  .theme-stars { background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
-
-  .animate-float { animation: float 3s ease-in-out infinite; }
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
-  }
-  .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-  @keyframes shake {
-    10%, 90% { transform: translate3d(-1px, 0, 0); }
-    20%, 80% { transform: translate3d(2px, 0, 0); }
-    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-    40%, 60% { transform: translate3d(4px, 0, 0); }
-  }
-
-  .btn-vault { 
-    background: #1a1a1a; 
-    border: 1px solid #d4af37; 
-    color: #d4af37; 
-    font-family: 'Courier Prime', monospace;
-    font-size: 1.5rem;
-    font-weight: bold;
-    padding: 1.25rem;
-    border-radius: 0.75rem;
-    transition: all 0.2s;
-    box-shadow: 0 4px 0 #8a6d1a;
-  }
-  .btn-vault:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
-
-  .tape { background-color: rgba(255, 255, 255, 0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.2); backdrop-filter: blur(2px); transform: rotate(-2deg); }
-  .hide-scrollbar::-webkit-scrollbar { display: none; }
-`;
-
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [appSettings, setAppSettings] = useState(null);
-  const [pins, setPins] = useState([]);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [activeUserId, setActiveUserId] = useState(null); 
-  const [showSettings, setShowSettings] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [showHeartPop, setShowHeartPop] = useState(false);
-  const [notification, setNotification] = useState(null);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    return onAuthStateChanged(auth, setUser);
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'ldr_settings', 'main');
-    const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
-      if (docSnap.exists()) {
-        setAppSettings(docSnap.data());
-      } else {
-        setDoc(settingsRef, { 
-          pin: '123456', 
-          theme: 'stars', 
-          runningTitle: 'Our Eternal Love Story • ', 
-          titleColor: 'multi',
-          importantDates: [{ date: '2024-01-01', label: 'Our Anniversary' }],
-          userA: { id: 'userA', name: 'Alice' }, 
-          userB: { id: 'userB', name: 'Bob' } 
-        });
-      }
-    });
-
-    const pinsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins');
-    let isInitialLoad = true;
-    const unsubPins = onSnapshot(pinsCol, (snapshot) => {
-      const newPins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added" && !isInitialLoad) {
-          const data = change.doc.data();
-          if (data.authorId !== activeUserId) {
-            setNotification({ name: appSettings?.[data.authorId]?.name || "Your Love", type: data.type });
-            setTimeout(() => setNotification(null), 5000);
-          }
+        /* Frame Textures */
+        .frame-classic { border: 12px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 0 5px rgba(0,0,0,0.1); }
+        .frame-wood { 
+            border: 15px solid #5d4037; 
+            background-image: url('https://www.transparenttextures.com/patterns/wood-pattern.png');
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4); 
         }
-      });
-      setPins(newPins);
-      isInitialLoad = false;
-    }, (err) => console.error("Firestore error:", err));
+        .frame-gold { 
+            border: 12px solid #d4af37; 
+            border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+        }
+        .frame-film { 
+            border: 20px solid #1a1a1a; 
+            border-left: 20px dashed #333; 
+            border-right: 20px dashed #333; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5); 
+        }
+        .frame-polaroid {
+            padding: 15px 15px 60px 15px;
+            background: #fdfdfd;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
-    return () => { unsubSettings(); unsubPins(); };
-  }, [user, activeUserId, appSettings]);
-
-  const getNextDate = () => {
-    if (!appSettings?.importantDates?.length) return null;
-    const now = new Date();
-    const futureDates = appSettings.importantDates
-      .map(d => ({ ...d, dateObj: new Date(d.date) }))
-      .filter(d => d.dateObj >= now)
-      .sort((a, b) => a.dateObj - b.dateObj);
-    return futureDates[0] || null;
-  };
-
-  const triggerHeartPop = () => {
-    setShowHeartPop(true);
-    setTimeout(() => { setShowHeartPop(false); setShowCreate(true); }, 600);
-  };
-
-  if (!appSettings) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Opening Vault...</div>;
-
-  return (
-    <>
-      <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
-      <div className={`min-h-screen w-full relative overflow-hidden transition-all duration-1000 theme-${appSettings.theme}`}>
+        .color-running {
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8b00ff);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+        }
         
-        {notification && (
-          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[300] w-[320px] bg-white border-2 border-red-500 rounded-xl p-4 shadow-2xl animate-bounce">
-            <div className="flex items-center gap-3">
-              <Bell className="text-red-500" />
-              <p className="font-handwriting text-lg">{notification.name} just pinned a {notification.type}!</p>
-            </div>
-          </div>
-        )}
+        @keyframes shine { to { background-position: 200% center; } }
 
-        {showHeartPop && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none">
-            <Heart className="text-red-500 fill-red-500 shadow-2xl scale-[2]" size={150} />
-          </div>
-        )}
+        .running-title-container { overflow: hidden; white-space: nowrap; width: 100%; }
+        .running-title { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
+        @keyframes marquee { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
 
-        {!isUnlocked ? (
-          <Gatekeeper correctPin={appSettings.pin} onUnlock={() => setIsUnlocked(true)} />
-        ) : !activeUserId ? (
-          <ProfileSelector appSettings={appSettings} onSelect={setActiveUserId} />
-        ) : (
-          <div className="absolute inset-0 flex flex-col">
-            <header className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-6 z-[100] shadow-sm">
-              <div className="flex items-center gap-3 w-1/4">
-                <div className="bg-red-50 p-2 rounded-lg text-red-600">
-                  <Calendar size={20} />
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">Upcoming Event</p>
-                  <p className="text-sm font-vintage truncate">
-                    {getNextDate() ? `${getNextDate().label} (${getNextDate().date})` : "No dates set"}
-                  </p>
-                </div>
-              </div>
+        /* Themes */
+        .theme-stars { background: url('https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
+        .theme-moon { background: url('https://images.unsplash.com/photo-1532693322450-2cb5c511067d?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
+        .theme-aurora { background: url('https://images.unsplash.com/photo-1531366936337-7785a0ce5652?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
+        .theme-nature { background: url('https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
+        .theme-sunset { background: url('https://images.unsplash.com/photo-1472120435166-d11000632ef1?auto=format&fit=crop&w=1920&q=80') center/cover fixed; }
+        .theme-noir { background: #111; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px; }
 
-              <div className="flex-1 px-10">
-                <div className="running-title-container bg-gray-50/50 py-1 rounded-full border border-gray-100">
-                  <div className={`running-title font-vintage font-bold text-lg ${appSettings.titleColor === 'multi' ? 'color-running' : ''}`} style={{ color: appSettings.titleColor !== 'multi' ? appSettings.titleColor : undefined }}>
-                    {appSettings.runningTitle} • {appSettings.runningTitle} • {appSettings.runningTitle}
-                  </div>
-                </div>
-              </div>
+        .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
 
-              <div className="flex items-center gap-2 w-1/4 justify-end">
-                <button onClick={() => setShowSettings(true)} className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-600">
-                  <Settings size={22} />
-                </button>
-                <button onClick={() => { setIsUnlocked(false); setActiveUserId(null); }} className="p-2 hover:bg-red-50 rounded-full transition-colors text-red-600">
-                  <Lock size={22} />
-                </button>
-              </div>
-            </header>
+        .btn-vault { 
+            background: #1a1a1a; border: 1px solid #d4af37; color: #d4af37; 
+            font-family: 'Courier Prime', monospace; font-size: 1.5rem; font-weight: bold;
+            padding: 1.25rem; border-radius: 0.75rem; transition: all 0.2s; box-shadow: 0 4px 0 #8a6d1a;
+        }
+        .btn-vault:active { transform: translateY(4px); box-shadow: 0 0 0 transparent; }
 
-            <div className="flex-1 relative overflow-auto hide-scrollbar">
-              <div className="w-[300vw] h-[300vh] relative">
-                {pins.map(pin => (
-                  <DraggablePin 
-                    key={pin.id} 
-                    pin={pin} 
-                    appSettings={appSettings}
-                    activeUserId={activeUserId}
-                    onMove={(id, x, y) => updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id), { x, y })}
-                    onDelete={(id) => deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id))}
-                  />
-                ))}
-              </div>
-            </div>
+        .tape { background-color: rgba(255, 255, 255, 0.4); box-shadow: 0 1px 3px rgba(0,0,0,0.2); backdrop-filter: blur(2px); transform: rotate(-2deg); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .pin-container { position: absolute; cursor: grab; }
+        .pin-container:active { cursor: grabbing; }
 
-            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
-              <button 
-                onClick={triggerHeartPop}
-                className="bg-red-600 hover:bg-red-500 text-white flex items-center gap-3 px-8 py-4 rounded-full shadow-[0_10px_30px_rgba(220,38,38,0.4)] transition-all hover:scale-110 active:scale-95 group"
-              >
-                <Plus size={24} className="group-hover:rotate-90 transition-transform" />
-                <span className="font-bold uppercase tracking-wider">Pin a Memory</span>
-              </button>
-            </div>
+        /* Notification Styling */
+        #gatekeeper-alert {
+            position: absolute;
+            top: -60px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 2rem;
+            border-radius: 9999px;
+            font-weight: bold;
+            font-family: 'Playfair Display', serif;
+            letter-spacing: 0.1em;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            white-space: nowrap;
+        }
+        #gatekeeper-alert.show { top: 20px; opacity: 1; }
+    </style>
+</head>
+<body class="bg-black text-white selection:bg-red-200">
 
-            {showCreate && (
-              <CreatePinModal 
-                activeUserId={activeUserId}
-                onClose={() => setShowCreate(false)} 
-                onAdd={async (data) => {
-                  const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
-                  await setDoc(ref, { ...data, createdAt: new Date().toISOString() });
-                  setShowCreate(false);
-                }} 
-              />
-            )}
-
-            {showSettings && (
-              <SettingsModal 
-                settings={appSettings} 
-                onClose={() => setShowSettings(false)} 
-                onSave={async (newSet) => {
-                  await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_settings', 'main'), newSet);
-                  setShowSettings(false);
-                }} 
-              />
-            )}
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-function Gatekeeper({ correctPin, onUnlock }) {
-  const [input, setInput] = useState('');
-  const [status, setStatus] = useState('idle');
-
-  const handleKey = (n) => {
-    if (status !== 'idle' || input.length >= 6) return;
-    const next = input + n;
-    setInput(next);
-    if (next.length === 6) {
-      if (next === correctPin) {
-        setStatus('success');
-        setTimeout(() => onUnlock(), 2000);
-      } else {
-        setStatus('error');
-        setTimeout(() => { setInput(''); setStatus('idle'); }, 3000);
-      }
-    }
-  };
-
-  return (
-    <div className="absolute inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
-      <div className={`bg-[#0a0a0a] p-10 rounded-3xl border-2 border-[#d4af37]/30 w-full max-w-md text-center transition-all duration-500 ${status === 'error' ? 'animate-shake border-red-600' : ''}`}>
-        {status === 'success' ? (
-          <div className="py-10 space-y-6">
-            <div className="flex justify-center gap-4 animate-float"><PartyPopper size={64} className="text-[#d4af37]" /><Heart size={64} className="text-red-500 fill-red-500" /></div>
-            <h2 className="font-handwriting text-5xl text-white">Welcome my love</h2>
-          </div>
-        ) : status === 'error' ? (
-          <div className="py-10 space-y-6">
-            <AlertTriangle size={80} className="text-red-600 mx-auto animate-pulse" />
-            <h2 className="font-vintage text-2xl text-red-600 uppercase font-bold">Sorry you are not meant to be here!</h2>
-          </div>
-        ) : (
-          <>
-            <h2 className="font-vintage text-[#d4af37] text-2xl mb-8 tracking-widest uppercase">Secured Vault</h2>
-            <div className="bg-black p-6 rounded-2xl mb-10 flex justify-center gap-4 border-2 border-[#d4af37]/20">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className={`w-4 h-4 rounded-full transition-all duration-300 ${i < input.length ? 'bg-[#f1c40f]' : 'bg-gray-900'}`} />
-              ))}
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (<button key={n} onClick={() => handleKey(n.toString())} className="btn-vault">{n}</button>))}
-              <button onClick={() => setInput('')} className="btn-vault border-red-900 text-red-500 text-xl">DEL</button>
-              <button onClick={() => handleKey('0')} className="btn-vault">0</button>
-              <div className="flex items-center justify-center"><Lock className="text-[#d4af37]/20" size={32} /></div>
-            </div>
-          </>
-        )}
-      </div>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="fixed inset-0 bg-black z-[2000] flex flex-col items-center justify-center space-y-4">
+        <div class="animate-pulse font-vintage text-2xl tracking-widest">OPENING THE VAULT...</div>
     </div>
-  );
-}
 
-function ProfileSelector({ appSettings, onSelect }) {
-  return (
-    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-40">
-      <div className="bg-white p-10 rounded-2xl shadow-2xl flex gap-10">
-        {['userA', 'userB'].map(uid => (
-          <button key={uid} onClick={() => onSelect(uid)} className="group flex flex-col items-center gap-4">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl border-4 ${uid === 'userA' ? 'bg-blue-50 border-blue-500 text-blue-500' : 'bg-orange-50 border-orange-500 text-orange-500'} transition-transform group-hover:scale-110`}>
-              {appSettings[uid].name[0]}
+    <!-- Gatekeeper (PIN screen) -->
+    <div id="gatekeeper" class="fixed inset-0 bg-black/95 z-[1500] flex items-center justify-center p-4 hidden">
+        <div id="gatekeeper-card" class="relative bg-[#0a0a0a] p-10 rounded-3xl border-2 border-[#d4af37]/30 w-full max-w-md text-center shadow-2xl transition-all">
+            <!-- Alert Message -->
+            <div id="gatekeeper-alert"></div>
+
+            <h2 class="font-vintage text-[#d4af37] text-2xl mb-8 tracking-[0.3em] uppercase">Private Vault</h2>
+            <div class="bg-black/50 p-6 rounded-2xl mb-10 flex justify-center gap-4 border border-[#d4af37]/20">
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
             </div>
-            <span className="font-vintage text-xl font-bold">{appSettings[uid].name}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DraggablePin({ pin, appSettings, activeUserId, onMove, onDelete }) {
-  const [pos, setPos] = useState({ x: pin.x, y: pin.y });
-  const isDragging = useRef(false);
-  const offset = useRef({ x: 0, y: 0 });
-
-  const handleDown = (e) => {
-    if (e.target.closest('.controls')) return;
-    isDragging.current = true;
-    const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-    const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-    offset.current = { x: clientX - pos.x, y: clientY - pos.y };
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleUp);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleUp);
-  };
-
-  const handleMove = (e) => {
-    if (!isDragging.current) return;
-    const clientX = e.clientX || (e.touches ? e.touches[0].clientX : 0);
-    const clientY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
-    setPos({ x: clientX - offset.current.x, y: clientY - offset.current.y });
-  };
-
-  const handleUp = () => {
-    if (isDragging.current) {
-      isDragging.current = false;
-      onMove(pin.id, pos.x, pos.y);
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleUp);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleUp);
-    }
-  };
-
-  return (
-    <div className="absolute cursor-grab active:cursor-grabbing hover:z-50" style={{ left: pos.x, top: pos.y }} onMouseDown={handleDown} onTouchStart={handleDown}>
-      <div className="relative group">
-        <div className="tape absolute top-[-10px] left-1/2 -translate-x-1/2 w-12 h-5 z-10 opacity-60"></div>
-        {pin.authorId === activeUserId && (
-          <button onClick={() => onDelete(pin.id)} className="controls absolute -top-4 -right-4 bg-black text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-50 shadow-lg"><X size={14} /></button>
-        )}
-        {pin.type === 'note' ? (
-          <div className="p-8 shadow-xl min-w-[200px] max-w-[320px] transition-transform group-hover:scale-105 bg-white">
-            <p style={{ fontSize: `${pin.fontSize || 24}px`, color: pin.color === 'multi' ? undefined : pin.color }} className={`leading-snug break-words ${pin.color === 'multi' ? 'color-running' : ''} ${pin.fontFamily === 'handwriting' ? 'font-handwriting' : pin.fontFamily === 'typewriter' ? 'font-typewriter' : 'font-vintage'}`}>
-              {pin.content}
-            </p>
-            <div className="mt-6 pt-2 text-right font-handwriting text-xl opacity-60">- {appSettings[pin.authorId]?.name}</div>
-          </div>
-        ) : (
-          <div className={`p-1 bg-white shadow-2xl transition-transform group-hover:rotate-1 frame-${pin.frameType || 'classic'}`}>
-            <img src={pin.content} className="max-w-[300px] max-h-[450px] object-cover block" alt="Memory" />
-            <div className="mt-4 font-handwriting text-2xl text-gray-500 flex justify-between px-2 bg-white pb-2"><span>{pin.caption}</span></div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CreatePinModal({ onClose, onAdd, activeUserId }) {
-  const [type, setType] = useState('note');
-  const [content, setContent] = useState('');
-  const [caption, setCaption] = useState('');
-  const [frameType, setFrameType] = useState('classic');
-  const [fontSize, setFontSize] = useState(24);
-  const [color, setColor] = useState('#1e293b');
-  const [fontFamily, setFontFamily] = useState('handwriting');
-  const fileInputRef = useRef(null);
-
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setContent(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden animate-float-in">
-        <div className="bg-red-700 p-6 text-white flex justify-between items-center"><h3 className="font-vintage text-2xl flex items-center gap-2"><Heart className="fill-white" /> Create New Memory</h3><button onClick={onClose}><X size={28} /></button></div>
-        <div className="p-8">
-          <div className="flex bg-gray-100 p-1 rounded-xl mb-8">
-            <button onClick={() => setType('note')} className={`flex-1 py-3 rounded-lg font-bold transition-all ${type === 'note' ? 'bg-white shadow-sm text-red-700' : 'text-gray-500'}`}>Note</button>
-            <button onClick={() => setType('photo')} className={`flex-1 py-3 rounded-lg font-bold transition-all ${type === 'photo' ? 'bg-white shadow-sm text-red-700' : 'text-gray-500'}`}>Photo</button>
-          </div>
-          
-          {type === 'note' ? (
-            <div className="space-y-6">
-              <textarea value={content} onChange={e => setContent(e.target.value)} className="w-full h-40 p-4 border-2 border-gray-100 rounded-xl outline-none focus:border-red-500 font-handwriting text-2xl" placeholder="Write something sweet..." />
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Text Color</label>
-                  <select value={color} onChange={e => setColor(e.target.value)} className="w-full p-3 bg-gray-50 rounded-lg">
-                    <option value="#1e293b">Dark Slate</option>
-                    <option value="#dc2626">Red</option>
-                    <option value="#2563eb">Blue</option>
-                    <option value="#16a34a">Green</option>
-                    <option value="multi">Chroma Wave (Running)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Font Style</label>
-                  <select value={fontFamily} onChange={e => setFontFamily(e.target.value)} className="w-full p-3 bg-gray-50 rounded-lg">
-                    <option value="handwriting">Handwritten</option>
-                    <option value="typewriter">Typewriter</option>
-                    <option value="vintage">Vintage</option>
-                  </select>
-                </div>
-              </div>
+            <div class="grid grid-cols-3 gap-4" id="pin-pad">
+                <button class="btn-vault" onclick="pressPin('1')">1</button>
+                <button class="btn-vault" onclick="pressPin('2')">2</button>
+                <button class="btn-vault" onclick="pressPin('3')">3</button>
+                <button class="btn-vault" onclick="pressPin('4')">4</button>
+                <button class="btn-vault" onclick="pressPin('5')">5</button>
+                <button class="btn-vault" onclick="pressPin('6')">6</button>
+                <button class="btn-vault" onclick="pressPin('7')">7</button>
+                <button class="btn-vault" onclick="pressPin('8')">8</button>
+                <button class="btn-vault" onclick="pressPin('9')">9</button>
+                <button class="btn-vault border-red-900 text-red-500 text-sm" onclick="clearPin()">CLR</button>
+                <button class="btn-vault" onclick="pressPin('0')">0</button>
+                <div class="flex items-center justify-center text-[#d4af37]/30"><i data-lucide="lock"></i></div>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="flex flex-col items-center gap-4">
-                {content ? (
-                  <div className="relative w-full group">
-                    <img src={content} className={`w-full max-h-60 object-contain rounded-xl frame-${frameType}`} alt="Preview" />
-                    <button onClick={() => setContent('')} className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full"><X size={16} /></button>
-                  </div>
-                ) : (
-                  <button onClick={() => fileInputRef.current?.click()} className="w-full border-4 border-dashed border-gray-200 rounded-3xl py-12 flex flex-col items-center gap-4 text-gray-400 hover:border-red-300 hover:text-red-400 transition-all">
-                    <Camera size={48} />
-                    <span className="font-bold uppercase tracking-widest">Upload from Device</span>
-                  </button>
-                )}
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept="image/*" className="hidden" />
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Caption</label>
-                  <input type="text" value={caption} onChange={e => setCaption(e.target.value)} placeholder="A short memory title..." className="w-full p-4 bg-gray-50 rounded-xl" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Frame Style</label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { id: 'classic', label: 'White' },
-                      { id: 'wood', label: 'Wood' },
-                      { id: 'gold', label: 'Gold' },
-                      { id: 'film', label: 'Film' }
-                    ].map(f => (
-                      <button 
-                        key={f.id} 
-                        onClick={() => setFrameType(f.id)} 
-                        className={`p-2 rounded-lg text-xs font-bold transition-all border-2 ${frameType === f.id ? 'bg-red-50 border-red-500 text-red-600' : 'bg-gray-50 border-transparent text-gray-400'}`}
-                      >
-                        {f.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <button onClick={() => onAdd({ type, content, caption, frameType, fontSize, color, fontFamily, authorId: activeUserId, x: 400, y: 400 })} className="w-full mt-8 bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-red-600 active:scale-95 transition-all">PIN MEMORY</button>
         </div>
-      </div>
     </div>
-  );
-}
 
-function SettingsModal({ settings, onClose, onSave }) {
-  const [data, setData] = useState({ ...settings });
-  const [newDate, setNewDate] = useState({ date: '', label: '' });
-
-  const addDate = () => {
-    if (newDate.date && newDate.label) {
-      setData({ ...data, importantDates: [...(data.importantDates || []), newDate] });
-      setNewDate({ date: '', label: '' });
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-2xl rounded-2xl p-8 shadow-2xl overflow-y-auto max-h-[90vh]">
-        <h3 className="font-vintage text-2xl mb-8 flex items-center gap-2"><Settings /> Vault Settings</h3>
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <h4 className="font-bold text-gray-400 uppercase text-xs">Running Title & Color</h4>
-            <input type="text" value={data.runningTitle} onChange={e => setData({...data, runningTitle: e.target.value})} className="w-full p-4 bg-gray-50 rounded-xl" placeholder="Header running title..." />
-            <div className="flex gap-2">
-              {['#000', '#dc2626', '#2563eb', '#16a34a', 'multi'].map(c => (
-                <button 
-                  key={c} 
-                  onClick={() => setData({...data, titleColor: c})} 
-                  className={`w-10 h-10 rounded-full border-2 ${data.titleColor === c ? 'border-black scale-110 shadow-lg' : 'border-transparent'} ${c === 'multi' ? 'color-running font-bold text-[8px] flex items-center justify-center' : ''}`} 
-                  style={{ backgroundColor: c !== 'multi' ? c : 'white' }}
-                >
-                  {c === 'multi' && <span className="text-black">WAVE</span>}
+    <!-- Profile Selector -->
+    <div id="profile-selector" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[1400] hidden">
+        <div class="bg-white p-12 rounded-[2rem] shadow-2xl flex flex-col items-center gap-10">
+            <h2 class="font-vintage text-2xl uppercase tracking-widest text-gray-400">Identify Yourself</h2>
+            <div class="flex gap-12">
+                <button onclick="selectUser('userA')" class="group flex flex-col items-center gap-4">
+                    <div id="avatar-A" class="w-32 h-32 rounded-full flex items-center justify-center text-5xl border-8 bg-blue-50 border-blue-500 text-blue-500 transition-all group-hover:scale-110">?</div>
+                    <span id="name-A" class="font-vintage text-2xl font-bold text-gray-800">...</span>
                 </button>
-              ))}
+                <button onclick="selectUser('userB')" class="group flex flex-col items-center gap-4">
+                    <div id="avatar-B" class="w-32 h-32 rounded-full flex items-center justify-center text-5xl border-8 bg-orange-50 border-orange-500 text-orange-500 transition-all group-hover:scale-110">?</div>
+                    <span id="name-B" class="font-vintage text-2xl font-bold text-gray-800">...</span>
+                </button>
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="font-bold text-gray-400 uppercase text-xs">Special Dates Reminder</h4>
-            <div className="flex gap-2">
-              <input type="date" value={newDate.date} onChange={e => setNewDate({...newDate, date: e.target.value})} className="flex-1 p-2 border rounded" />
-              <input type="text" placeholder="Label (e.g. Birthday)" value={newDate.label} onChange={e => setNewDate({...newDate, label: e.target.value})} className="flex-1 p-2 border rounded" />
-              <button onClick={addDate} className="bg-black text-white px-4 rounded hover:bg-gray-800 transition-colors">+</button>
-            </div>
-            <div className="space-y-2">
-              {(data.importantDates || []).map((d, i) => (
-                <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Calendar size={14} className="text-red-500" />
-                    <span className="font-bold">{d.label}</span>
-                    <span className="text-gray-400">—</span>
-                    <span className="font-mono">{d.date}</span>
-                  </div>
-                  <button onClick={() => setData({...data, importantDates: data.importantDates.filter((_, idx) => idx !== i)})} className="text-red-500 hover:bg-red-50 p-1 rounded-full">
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-4 space-y-3">
-            <button onClick={() => onSave(data)} className="w-full bg-black text-white py-4 rounded-xl font-bold shadow-lg hover:bg-gray-900 transition-colors">SAVE CHANGES</button>
-            <button onClick={onClose} className="w-full text-gray-400 font-bold text-sm hover:text-gray-600">Cancel</button>
-          </div>
         </div>
-      </div>
     </div>
-  );
-}
+
+    <!-- Main Content App -->
+    <div id="app-content" class="min-h-screen w-full relative overflow-hidden hidden">
+        <!-- Header -->
+        <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-6 z-[100] shadow-sm text-black">
+            <div class="flex items-center gap-3 w-1/4">
+                <div class="bg-red-50 p-2 rounded-lg text-red-600"><i data-lucide="bell" size="20"></i></div>
+                <div class="overflow-hidden">
+                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">Countdown</p>
+                    <p id="next-event" class="text-sm font-vintage truncate">No Event Set</p>
+                </div>
+            </div>
+            <div class="flex-1 px-10">
+                <div class="running-title-container bg-gray-50/50 py-1 rounded-full border border-gray-100">
+                    <div id="marquee-text" class="running-title font-vintage font-bold text-lg"></div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-1/4 justify-end">
+                <button onclick="toggleSettings(true)" class="p-2 hover:bg-gray-100 rounded-full text-gray-600"><i data-lucide="settings"></i></button>
+                <button onclick="lockApp()" class="p-2 hover:bg-red-50 rounded-full text-red-600"><i data-lucide="lock"></i></button>
+            </div>
+        </header>
+
+        <!-- Infinite Canvas Surface -->
+        <div id="canvas" class="flex-1 relative overflow-auto hide-scrollbar w-full h-[calc(100vh-64px)]">
+            <div id="canvas-surface" class="w-[400vw] h-[400vh] relative">
+                <!-- Memory Pins are rendered here -->
+            </div>
+        </div>
+
+        <!-- Add Button -->
+        <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
+            <button onclick="toggleModal('modal-create', true)" class="bg-red-600 hover:bg-red-500 text-white flex items-center gap-3 px-8 py-4 rounded-full shadow-2xl transition-all hover:scale-110 group">
+                <i data-lucide="plus" class="group-hover:rotate-90 transition-transform"></i>
+                <span class="font-bold uppercase tracking-wider">New Memory</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CREATE MODAL -->
+    <div id="modal-create" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[1600] flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-2xl rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="bg-red-700 p-8 text-white flex justify-between items-center shrink-0">
+                <h3 class="font-vintage text-2xl flex items-center gap-3"><i data-lucide="pen-tool"></i> CREATE</h3>
+                <button onclick="toggleModal('modal-create', false)"><i data-lucide="x" size="32"></i></button>
+            </div>
+            
+            <div class="p-10 text-black overflow-y-auto">
+                <div class="flex bg-gray-100 p-1.5 rounded-2xl mb-8">
+                    <button id="tab-note" onclick="setCreateType('note')" class="flex-1 py-4 rounded-xl font-bold bg-white shadow-md text-red-700">Write Note</button>
+                    <button id="tab-photo" onclick="setCreateType('photo')" class="flex-1 py-4 rounded-xl font-bold text-gray-500">Pin Photo</button>
+                </div>
+
+                <div id="form-note">
+                    <textarea id="note-text" class="w-full h-44 p-6 bg-gray-50 border-2 border-transparent focus:border-red-500 rounded-2xl outline-none font-handwriting text-3xl text-gray-700 mb-6" placeholder="Something sweet..."></textarea>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Ink Color</label>
+                            <select id="note-color" class="w-full p-4 bg-gray-50 border rounded-xl font-bold">
+                                <option value="#1e293b">Slate Ink</option>
+                                <option value="#dc2626">Rose Petal</option>
+                                <option value="#2563eb">Ocean Blue</option>
+                                <option value="#7c3aed">Lavender</option>
+                                <option value="multi">Chroma Wave</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Pen Style</label>
+                            <select id="note-font" class="w-full p-4 bg-gray-50 border rounded-xl font-bold">
+                                <option value="handwriting">Default Cursive</option>
+                                <option value="cursive-fancy">Fancy Cursive</option>
+                                <option value="typewriter">Classic Type</option>
+                                <option value="typewriter-rough">Rough Type</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Size</label>
+                        <select id="note-size" class="w-full p-4 bg-gray-50 border rounded-xl font-bold">
+                            <option value="text-2xl">Small</option>
+                            <option value="text-4xl" selected>Normal</option>
+                            <option value="text-6xl">Large</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="form-photo" class="hidden">
+                    <div id="photo-drop" onclick="document.getElementById('file-input').click()" class="w-full border-4 border-dashed border-gray-200 rounded-[2rem] py-16 flex flex-col items-center gap-6 text-gray-400 hover:bg-red-50 cursor-pointer mb-6">
+                        <i data-lucide="image" size="64"></i>
+                        <span class="font-bold text-sm uppercase tracking-widest">Select Memory File</span>
+                        <input type="file" id="file-input" class="hidden" accept="image/*" onchange="previewFile(event)">
+                    </div>
+                    <div id="photo-preview-container" class="hidden relative mb-6">
+                        <img id="photo-preview" class="w-full max-h-64 object-contain rounded-xl shadow-lg">
+                        <button onclick="clearPhoto()" class="absolute -top-3 -right-3 bg-red-600 text-white p-2 rounded-full"><i data-lucide="trash-2" size="18"></i></button>
+                    </div>
+                    <div class="space-y-4">
+                        <input type="text" id="photo-caption" placeholder="Short caption..." class="w-full p-4 bg-gray-50 rounded-xl border font-vintage">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Frame Style</label>
+                            <select id="photo-frame" class="w-full p-4 bg-gray-50 border rounded-xl font-bold">
+                                <option value="classic">Gallery White</option>
+                                <option value="wood">Antique Wood</option>
+                                <option value="gold">Royal Gold</option>
+                                <option value="film">Vintage Film</option>
+                                <option value="polaroid">Polaroid Look</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="savePin()" class="w-full mt-12 bg-red-700 text-white font-bold py-6 rounded-2xl shadow-xl uppercase tracking-widest hover:bg-red-800 transition-all active:scale-95">Pin to Canvas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="modal-settings" class="fixed inset-0 bg-black/80 z-[1600] flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl text-black overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-8 border-b flex justify-between items-center">
+                <h3 class="font-vintage text-3xl uppercase tracking-widest">Vault Configuration</h3>
+                <button onclick="toggleSettings(false)"><i data-lucide="x" size="32"></i></button>
+            </div>
+            <div class="p-10 overflow-y-auto space-y-10">
+                <section>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Marquee Title Message</label>
+                    <input type="text" id="set-title" class="w-full p-4 bg-gray-50 rounded-xl border mb-2" placeholder="Title text...">
+                    <select id="set-title-color" class="w-full p-4 bg-gray-50 border rounded-xl">
+                        <option value="multi">Rainbow Wave</option>
+                        <option value="black">Classic Black</option>
+                        <option value="#dc2626">Deep Red</option>
+                        <option value="#2563eb">Classic Blue</option>
+                    </select>
+                </section>
+
+                <section class="bg-red-50/50 p-6 rounded-2xl border border-red-100">
+                    <label class="block text-xs font-bold text-red-700 uppercase mb-4">Date Reminder (Countdown)</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input type="text" id="set-date-label" class="p-4 rounded-xl border" placeholder="Event Name">
+                        <input type="date" id="set-date-value" class="p-4 rounded-xl border">
+                    </div>
+                </section>
+
+                <section>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-4">Atmosphere Theme</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button onclick="updateSettingsField('theme', 'stars')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="star"></i>Stars</button>
+                        <button onclick="updateSettingsField('theme', 'moon')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="moon"></i>Moon</button>
+                        <button onclick="updateSettingsField('theme', 'nature')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="trees"></i>Forest</button>
+                        <button onclick="updateSettingsField('theme', 'sunset')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="sun"></i>Sunset</button>
+                        <button onclick="updateSettingsField('theme', 'aurora')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="sparkles"></i>Aurora</button>
+                        <button onclick="updateSettingsField('theme', 'noir')" class="p-4 border rounded-xl hover:bg-gray-50 flex flex-col items-center gap-2"><i data-lucide="grid"></i>Noir</button>
+                    </div>
+                </section>
+
+                <section>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Security Pin (6 Digits)</label>
+                    <input type="password" id="set-pin" maxlength="6" class="w-full p-4 bg-gray-50 rounded-xl border font-mono text-2xl tracking-widest">
+                </section>
+
+                <button onclick="saveAllSettings()" class="w-full bg-black text-white py-6 rounded-2xl font-bold shadow-2xl uppercase tracking-widest hover:bg-gray-800">Save Config</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // APP STATE
+        window.appData = {
+            user: null,
+            activeUserId: null,
+            settings: null,
+            currentPinInput: '',
+            createType: 'note',
+            photoBase64: null,
+            isDragging: false
+        };
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'ldr-vintage-vault-v2';
+
+        async function init() {
+            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            if (token) await signInWithCustomToken(auth, token);
+            else await signInAnonymously(auth);
+
+            onAuthStateChanged(auth, (user) => {
+                window.appData.user = user;
+                if (user) syncData();
+            });
+        }
+
+        function syncData() {
+            const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', 'ldr_settings', 'main');
+            onSnapshot(settingsRef, (snap) => {
+                if (snap.exists()) {
+                    window.appData.settings = snap.data();
+                    applyUIThemes();
+                } else {
+                    setDoc(settingsRef, {
+                        pin: '123456',
+                        theme: 'stars',
+                        runningTitle: 'Our World • ',
+                        titleColor: 'multi',
+                        userA: { name: 'You' },
+                        userB: { name: 'Me' },
+                        reminder: { label: '', date: '' }
+                    });
+                }
+            }, (err) => console.error(err));
+
+            const pinsCol = collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins');
+            onSnapshot(pinsCol, (snapshot) => {
+                const pins = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderCanvas(pins);
+            }, (err) => console.error(err));
+
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('gatekeeper').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        // Vault Access with new Feedback
+        window.pressPin = (n) => {
+            if (window.appData.currentPinInput.length >= 6) return;
+            window.appData.currentPinInput += n;
+            updatePinUI();
+            
+            if (window.appData.currentPinInput.length === 6) {
+                if (window.appData.currentPinInput === window.appData.settings.pin) {
+                    showGatekeeperAlert("You're welcome", "bg-green-500 text-white");
+                    setTimeout(() => {
+                        document.getElementById('gatekeeper').classList.add('hidden');
+                        document.getElementById('profile-selector').classList.remove('hidden');
+                        updateProfileLabels();
+                        window.clearPin();
+                    }, 800);
+                } else {
+                    showGatekeeperAlert("Get Lost!!", "bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)]");
+                    document.getElementById('gatekeeper-card').classList.add('animate-shake');
+                    setTimeout(() => {
+                        document.getElementById('gatekeeper-card').classList.remove('animate-shake');
+                        window.clearPin();
+                    }, 500);
+                }
+            }
+        };
+
+        function showGatekeeperAlert(msg, classes) {
+            const alertEl = document.getElementById('gatekeeper-alert');
+            alertEl.textContent = msg;
+            alertEl.className = `${classes} show`;
+            setTimeout(() => alertEl.classList.remove('show'), 2000);
+        }
+
+        window.clearPin = () => {
+            window.appData.currentPinInput = '';
+            updatePinUI();
+        };
+
+        function updatePinUI() {
+            const dots = document.querySelectorAll('.pin-dot');
+            dots.forEach((dot, i) => {
+                dot.className = `pin-dot w-4 h-4 rounded-full transition-all duration-300 ${i < window.appData.currentPinInput.length ? 'bg-[#d4af37] shadow-[0_0_10px_#d4af37]' : 'bg-gray-800'}`;
+            });
+        }
+
+        window.selectUser = (uid) => {
+            window.appData.activeUserId = uid;
+            document.getElementById('profile-selector').classList.add('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
+            const canvas = document.getElementById('canvas');
+            canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
+            canvas.scrollTop = (canvas.scrollHeight - canvas.clientHeight) / 2;
+        };
+
+        function applyUIThemes() {
+            const s = window.appData.settings;
+            document.body.className = `theme-${s.theme}`;
+            const marquee = document.getElementById('marquee-text');
+            marquee.textContent = `${s.runningTitle} ${s.runningTitle} ${s.runningTitle}`;
+            marquee.className = `running-title font-vintage font-bold text-lg ${s.titleColor === 'multi' ? 'color-running' : ''}`;
+            if (s.titleColor !== 'multi') marquee.style.color = s.titleColor;
+
+            const next = document.getElementById('next-event');
+            if (s.reminder?.date) {
+                const diff = Math.ceil((new Date(s.reminder.date) - new Date()) / (1000 * 60 * 60 * 24));
+                next.textContent = `${s.reminder.label} - ${diff > 0 ? diff + ' days left' : (diff === 0 ? 'Today!' : 'Passed')}`;
+            } else {
+                next.textContent = "No Event Set";
+            }
+        }
+
+        function updateProfileLabels() {
+            const s = window.appData.settings;
+            document.getElementById('name-A').textContent = s.userA.name;
+            document.getElementById('avatar-A').textContent = s.userA.name[0];
+            document.getElementById('name-B').textContent = s.userB.name;
+            document.getElementById('avatar-B').textContent = s.userB.name[0];
+        }
+
+        window.toggleModal = (id, show) => {
+            document.getElementById(id).classList.toggle('hidden', !show);
+        };
+
+        window.setCreateType = (t) => {
+            window.appData.createType = t;
+            document.getElementById('form-note').classList.toggle('hidden', t !== 'note');
+            document.getElementById('form-photo').classList.toggle('hidden', t !== 'photo');
+            document.getElementById('tab-note').className = t === 'note' ? 'flex-1 py-4 rounded-xl font-bold bg-white shadow-md text-red-700' : 'flex-1 py-4 rounded-xl font-bold text-gray-500';
+            document.getElementById('tab-photo').className = t === 'photo' ? 'flex-1 py-4 rounded-xl font-bold bg-white shadow-md text-red-700' : 'flex-1 py-4 rounded-xl font-bold text-gray-500';
+        };
+
+        window.previewFile = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                window.appData.photoBase64 = ev.target.result;
+                document.getElementById('photo-preview').src = ev.target.result;
+                document.getElementById('photo-drop').classList.add('hidden');
+                document.getElementById('photo-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.clearPhoto = () => {
+            window.appData.photoBase64 = null;
+            document.getElementById('photo-drop').classList.remove('hidden');
+            document.getElementById('photo-preview-container').classList.add('hidden');
+        };
+
+        window.savePin = async () => {
+            const type = window.appData.createType;
+            const canvas = document.getElementById('canvas');
+            const scrollX = canvas.scrollLeft + (canvas.clientWidth / 2);
+            const scrollY = canvas.scrollTop + (canvas.clientHeight / 2);
+
+            const pinData = {
+                type,
+                authorId: window.appData.activeUserId,
+                x: scrollX + (Math.random() * 200 - 100),
+                y: scrollY + (Math.random() * 200 - 100),
+                createdAt: new Date().toISOString()
+            };
+
+            if (type === 'note') {
+                pinData.content = document.getElementById('note-text').value;
+                pinData.color = document.getElementById('note-color').value;
+                pinData.fontFamily = document.getElementById('note-font').value;
+                pinData.fontSize = document.getElementById('note-size').value;
+                if (!pinData.content) return;
+            } else {
+                pinData.content = window.appData.photoBase64;
+                pinData.caption = document.getElementById('photo-caption').value;
+                pinData.frameType = document.getElementById('photo-frame').value;
+                if (!pinData.content) return;
+            }
+
+            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
+            await setDoc(ref, pinData);
+            window.toggleModal('modal-create', false);
+            document.getElementById('note-text').value = '';
+            window.clearPhoto();
+        };
+
+        window.deletePin = async (id) => {
+            await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id));
+        };
+
+        function renderCanvas(pins) {
+            const surface = document.getElementById('canvas-surface');
+            surface.innerHTML = '';
+            pins.forEach(pin => {
+                const div = document.createElement('div');
+                div.className = 'pin-container group';
+                div.style.left = `${pin.x}px`;
+                div.style.top = `${pin.y}px`;
+                const authorName = window.appData.settings?.[pin.authorId]?.name || 'Unknown';
+
+                div.innerHTML = `
+                    <div class="relative">
+                        <div class="tape absolute top-[-10px] left-1/2 -translate-x-1/2 w-16 h-6 z-10 opacity-40"></div>
+                        ${pin.authorId === window.appData.activeUserId ? `
+                            <button onclick="deletePin('${pin.id}')" class="absolute -top-4 -right-4 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                                <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
+                            </button>
+                        ` : ''}
+                        ${pin.type === 'note' ? `
+                            <div class="p-8 shadow-2xl min-w-[240px] max-w-[400px] bg-white border border-gray-100">
+                                <p class="leading-snug break-words ${pin.color === 'multi' ? 'color-running' : ''} font-${pin.fontFamily || 'handwriting'} ${pin.fontSize || 'text-4xl'}" 
+                                   style="color: ${pin.color !== 'multi' ? pin.color : 'inherit'}">
+                                    ${pin.content}
+                                </p>
+                                <div class="mt-8 pt-2 text-right font-handwriting text-2xl opacity-40 italic">- ${authorName}</div>
+                            </div>
+                        ` : `
+                            <div class="p-1 bg-white shadow-2xl frame-${pin.frameType || 'classic'}">
+                                <img src="${pin.content}" class="max-w-[340px] max-h-[500px] object-cover block">
+                                ${pin.caption ? `<div class="mt-4 font-handwriting text-3xl text-gray-600 flex justify-center px-2 bg-white pb-3"><span>${pin.caption}</span></div>` : ''}
+                            </div>
+                        `}
+                    </div>
+                `;
+                surface.appendChild(div);
+                attachDrag(div, pin.id);
+            });
+            lucide.createIcons();
+        }
+
+        function attachDrag(el, id) {
+            let start = { x: 0, y: 0 };
+            const onMove = (e) => {
+                if (!window.appData.isDragging) return;
+                el.style.left = `${e.clientX - start.x}px`;
+                el.style.top = `${e.clientY - start.y}px`;
+            };
+            const onEnd = async () => {
+                if (!window.appData.isDragging) return;
+                window.appData.isDragging = false;
+                el.style.zIndex = 'auto';
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onEnd);
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id), {
+                    x: parseInt(el.style.left),
+                    y: parseInt(el.style.top)
+                });
+            };
+            el.onmousedown = (e) => {
+                if (e.target.closest('button')) return;
+                window.appData.isDragging = true;
+                el.style.zIndex = 1000;
+                start = { x: e.clientX - el.offsetLeft, y: e.clientY - el.offsetTop };
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onEnd);
+            };
+        }
+
+        window.toggleSettings = (show) => {
+            if (show) {
+                const s = window.appData.settings;
+                document.getElementById('set-title').value = s.runningTitle;
+                document.getElementById('set-title-color').value = s.titleColor;
+                document.getElementById('set-date-label').value = s.reminder?.label || '';
+                document.getElementById('set-date-value').value = s.reminder?.date || '';
+                document.getElementById('set-pin').value = s.pin;
+            }
+            window.toggleModal('modal-settings', show);
+        };
+
+        window.updateSettingsField = async (field, value) => {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'ldr_settings', 'main');
+            await updateDoc(ref, { [field]: value });
+        };
+
+        window.saveAllSettings = async () => {
+            const ref = doc(db, 'artifacts', appId, 'public', 'data', 'ldr_settings', 'main');
+            const pin = document.getElementById('set-pin').value;
+            if (pin.length !== 6) return;
+            await updateDoc(ref, {
+                runningTitle: document.getElementById('set-title').value,
+                titleColor: document.getElementById('set-title-color').value,
+                reminder: {
+                    label: document.getElementById('set-date-label').value,
+                    date: document.getElementById('set-date-value').value
+                },
+                pin: pin
+            });
+            window.toggleSettings(false);
+        };
+
+        window.lockApp = () => {
+            window.appData.activeUserId = null;
+            window.appData.currentPinInput = '';
+            updatePinUI();
+            document.getElementById('app-content').classList.add('hidden');
+            document.getElementById('gatekeeper').classList.remove('hidden');
+        };
+
+        init();
+    </script>
+</body>
+</html>
