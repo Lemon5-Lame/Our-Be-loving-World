@@ -322,22 +322,14 @@
 
     <script type="module">
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-
-window.addEventListener('DOMContentLoaded', () => {
-  
-    setTimeout(() => {
-        const loadingScreen = document.getElementById('loading-screen');
-        const gatekeeper = document.getElementById('gatekeeper');
-
-        if (loadingScreen && gatekeeper) {
-            loadingScreen.classList.add('hidden'); 
-            gatekeeper.classList.remove('hidden'); 
-            console.log("Vault Opened - Showing Gatekeeper");
-        }
-    }, 2000); 
+const firebaseConfig = {
+  apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
+  authDomain: "our-loving-world.firebaseapp.com",
+  projectId: "our-loving-world",
+  storageBucket: "our-loving-world.firebasestorage.app",
+  messagingSenderId: "796656224257",
+  appId: "1:796656224257:web:978c53abcee481cd129800",
+  measurementId: "G-PDBJWPKWTW"
 });
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -662,4 +654,5 @@ window.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
+
 
