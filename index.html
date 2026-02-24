@@ -320,22 +320,30 @@
         </div>
     </div>
 
-    <script type="module">
+<script type="module">
+        // 1. YOUR REAL CONFIG
+        const firebaseConfig = {
+            apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
+            authDomain: "our-loving-world.firebaseapp.com",
+            projectId: "our-loving-world",
+            storageBucket: "our-loving-world.firebasestorage.app",
+            messagingSenderId: "796656224257",
+            appId: "1:796656224257:web:978c53abcee481cd129800",
+            measurementId: "G-PDBJWPKWTW"
+        };
 
-const firebaseConfig = {
-  apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
-  authDomain: "our-loving-world.firebaseapp.com",
-  projectId: "our-loving-world",
-  storageBucket: "our-loving-world.firebasestorage.app",
-  messagingSenderId: "796656224257",
-  appId: "1:796656224257:web:978c53abcee481cd129800",
-  measurementId: "G-PDBJWPKWTW"
-};
+        // 2. THE IMPORTS
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // APP STATE
+        // 3. THE INITIALIZATION
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'our-loving-world'; 
+
+        // 4. APP STATE
         window.appData = {
             user: null,
             activeUserId: null,
@@ -346,10 +354,24 @@ const firebaseConfig = {
             isDragging: false
         };
 
+        // 5. START UP LOGIC
         async function init() {
-            const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-            if (token) await signInWithCustomToken(auth, token);
-            else await signInAnonymously(auth);
+            try {
+                await signInAnonymously(auth);
+                onAuthStateChanged(auth, (user) => {
+                    window.appData.user = user;
+                    if (user) {
+                        console.log("Vault Connected!");
+                        syncData();
+                    }
+                });
+            } catch (error) {
+                console.error("Connection error:", error);
+                // Emergency bypass to show PIN screen even if Firebase is slow
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('gatekeeper').classList.remove('hidden');
+            }
+        }
 
             onAuthStateChanged(auth, (user) => {
                 window.appData.user = user;
@@ -648,6 +670,7 @@ const firebaseConfig = {
     </script>
 </body>
 </html>
+
 
 
 
