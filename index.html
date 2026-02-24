@@ -321,6 +321,26 @@
     </div>
 
     <script type="module">
+	// ... (Your Firebase Config here) ...
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// --- NEW LOGIC TO STOP THE LOADING SCREEN ---
+window.addEventListener('DOMContentLoaded', () => {
+    // 1. Give it a small 2-second delay for dramatic effect
+    setTimeout(() => {
+        const loadingScreen = document.getElementById('loading-screen');
+        const gatekeeper = document.getElementById('gatekeeper');
+
+        if (loadingScreen && gatekeeper) {
+            loadingScreen.classList.add('hidden'); // Hide "Opening Vault"
+            gatekeeper.classList.remove('hidden'); // Show the PIN screen
+            console.log("Vault Opened - Showing Gatekeeper");
+        }
+    }, 2000); 
+});
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
