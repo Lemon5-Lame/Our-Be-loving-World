@@ -13,7 +13,15 @@
         .font-typewriter { font-family: 'Courier Prime', monospace; }
         .font-typewriter-rough { font-family: 'Special Elite', system-ui; }
         .font-vintage { font-family: 'Playfair Display', serif; }
-
+/* --- ADD THE BORDER HERE --- */
+    body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        border: 15px solid #d4af37; 
+        border-image: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c) 1;
+        pointer-events: none; 
+        z-index: 9999;
         /* Frame Textures */
         .frame-classic { border: 12px solid #fff; box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 0 5px rgba(0,0,0,0.1); }
         .frame-wood { 
@@ -687,6 +695,7 @@ const appId = "our-loving-world";
     </script>
 </body>
 </html>
+
 
 
 
