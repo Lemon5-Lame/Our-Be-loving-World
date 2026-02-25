@@ -406,28 +406,28 @@ window.pressPin = (n) => {
     updatePinUI();
     
     if (window.appData.currentPinInput.length === 6) {
-        if (window.appData.currentPinInput === "000000") {
-            enterApp(true); // Default Version
-        } else if (window.appData.currentPinInput === window.appData.settings.pin) {
-            enterApp(false); // Original Version
+        const enteredPin = window.appData.currentPinInput;
+        const correctPin = window.appData.settings.pin;
+
+        if (enteredPin === "000000") {
+            // Visit Mode
+            showGatekeeperAlert("Visitor Access", "bg-blue-500 text-white");
+            setTimeout(() => {
+                window.enterApp(true);
+                window.clearPin();
+            }, 800);
+        } else if (enteredPin === correctPin) {
+            // Owner Mode
+            showGatekeeperAlert("Welcome Home", "bg-green-500 text-white");
+            setTimeout(() => {
+                window.enterApp(false);
+                window.clearPin();
+            }, 800);
         } else {
+            // Wrong Pin
+            showGatekeeperAlert("Access Denied", "bg-red-600 text-white");
             window.clearPin();
-            alert("Wrong Pin!");
         }
-    }
-};
-        window.enterApp = (isVisitMode) => {
-    document.getElementById('gatekeeper').classList.add('hidden');
-    
-    if (isVisitMode) {
-        // Visitor Mode logic
-        alert("Entering as Visitor (Read Only)");
-        document.getElementById('app-content').classList.remove('hidden');
-        // Optional: Hide add buttons for visitors
-        document.getElementById('add-btn')?.classList.add('hidden'); 
-    } else {
-        // Normal Mode logic
-        document.getElementById('app-content').classList.remove('hidden');
     }
 };
 
@@ -514,33 +514,6 @@ const app = initializeApp(firebaseConfig);
             document.getElementById('gatekeeper').classList.remove('hidden');
             lucide.createIcons();
         }
-
-        // Vault Access with new Feedback
-        window.pressPin = (n) => {
-            if (window.appData.currentPinInput.length >= 6) return;
-            window.appData.currentPinInput += n;
-            updatePinUI();
-            
-            if (window.appData.currentPinInput.length === 6) {
-                if (window.appData.currentPinInput === window.appData.settings.pin) {
-                    showGatekeeperAlert("You're welcome", "bg-green-500 text-white");
-                    setTimeout(() => {
-                        document.getElementById('gatekeeper').classList.add('hidden');
-                        document.getElementById('profile-selector').classList.remove('hidden');
-                        updateProfileLabels();
-                        window.clearPin();
-                    }, 800);
-                } else {
-                    showGatekeeperAlert("Get Lost!!", "bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.5)]");
-                    document.getElementById('gatekeeper-card').classList.add('animate-shake');
-                    setTimeout(() => {
-                        document.getElementById('gatekeeper-card').classList.remove('animate-shake');
-                        window.clearPin();
-                    }, 500);
-                }
-            }
-        };
-
         function showGatekeeperAlert(msg, classes) {
             const alertEl = document.getElementById('gatekeeper-alert');
             alertEl.textContent = msg;
@@ -843,6 +816,7 @@ window.startTimeCounter = (startDateStr) => {
     </script>
 </body>
 </html>
+
 
 
 
