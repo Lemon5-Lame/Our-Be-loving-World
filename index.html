@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Canvas - LDR Vault</title>
+    <title>Yangon - Mandalay </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -393,10 +393,47 @@ const appId = "our-loving-world";
         }
 
         // Vault Access with new Feedback
-        window.pressPin = (n) => {
-            if (window.appData.currentPinInput.length >= 6) return;
-            window.appData.currentPinInput += n;
-            updatePinUI();
+       window.pressPin = (n) => {
+    // 1. Don't allow more than 6 digits
+    if (window.appData.currentPinInput.length >= 6) return;
+    
+    window.appData.currentPinInput += n;
+    updatePinUI();
+
+    // 2. Check the PIN once 6 digits are entered
+    if (window.appData.currentPinInput.length === 6) {
+        if (window.appData.currentPinInput === window.appData.settings.pin) {
+            // SUCCESS: Clear input and show the profile selector
+            window.appData.currentPinInput = '';
+            document.getElementById('gatekeeper').classList.add('hidden');
+            document.getElementById('user-selector').classList.remove('hidden');
+        } else {
+            // FAIL: Wrong PIN
+            window.appData.currentPinInput = '';
+            setTimeout(() => updatePinUI(), 500);
+
+            // --- ADD VIBRATION HERE ---
+            if (navigator.vibrate) {
+                // Vibrates: 100ms ON, 50ms OFF, 100ms ON (Double Buzz)
+                navigator.vibrate([100, 50, 100]);
+            }
+            // --------------------------
+
+            const card = document.getElementById('gatekeeper-card');
+            const alertEl = document.getElementById('gatekeeper-alert');
+            
+            // Visual feedback (Shake and Red text)
+            card.classList.add('animate-shake');
+            alertEl.classList.remove('hidden');
+            alertEl.textContent = "ACCESS DENIED"; 
+
+            setTimeout(() => {
+                card.classList.remove('animate-shake');
+                alertEl.classList.add('hidden');
+            }, 2000);
+        }
+    }
+};
             
             if (window.appData.currentPinInput.length === 6) {
                 if (window.appData.currentPinInput === window.appData.settings.pin) {
@@ -653,6 +690,7 @@ const appId = "our-loving-world";
     </script>
 </body>
 </html>
+
 
 
 
