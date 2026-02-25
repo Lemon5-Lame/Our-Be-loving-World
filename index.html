@@ -11,27 +11,25 @@
         /* Add to your existing <style> section */
 @media (max-width: 768px) {
     /* Make the canvas surface feel more natural on mobile */
-    #canvas-surface {
-        width: 800vw; /* Increase "room" to move on small screens */
-        height: 800vh;
-    }
-
-    /* Increase button sizes for "fat fingers" */
-    .btn-vault {
-        padding: 1rem;
-        font-size: 1.25rem;
-    }
-
-    /* Adjust the memory pins so they don't take up the whole screen */
-    .pin-container {
-        transform: scale(0.8); 
-        transform-origin: center;
-    }
+/* Add/Replace in your <style> section */
+#canvas-surface {
+    /* Standard background instead of infinite grid */
+    background-color: #f9fafb; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 100px; /* Space for the "New Memory" button */
 }
 
-/* Ensure images and notes don't overflow the screen width */
-.pin-container img, .pin-container > div {
-    max-width: 85vw !important;
+.pin-container {
+    /* Remove absolute positioning so items stack normally */
+    position: relative !important; 
+    left: 0 !important;
+    top: 0 !important;
+    margin-bottom: 2rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
 }
         /* Add this to your style section */
 #canvas-surface {
@@ -217,8 +215,10 @@
         </header>
 
         <!-- Infinite Canvas Surface -->
-        <div id="canvas" class="flex-1 relative overflow-auto hide-scrollbar w-full h-[calc(100vh-64px)]">
-            <div id="canvas-surface" class="w-[400vw] h-[400vh] relative">
+       <div id="canvas" class="flex-1 relative overflow-y-auto overflow-x-hidden w-full h-[calc(100vh-64px)] bg-gray-50">
+    <div id="canvas-surface" class="w-full min-h-full relative p-8 flex flex-col items-center gap-8">
+        </div>
+</div>
                 <!-- Memory Pins are rendered here -->
             </div>
         </div>
@@ -560,18 +560,22 @@ const app = initializeApp(firebaseConfig);
         };
 
         window.savePin = async () => {
-            const type = window.appData.createType;
-            const canvas = document.getElementById('canvas');
-            const scrollX = canvas.scrollLeft + (canvas.clientWidth / 2);
-            const scrollY = canvas.scrollTop + (canvas.clientHeight / 2);
+    const type = window.appData.createType;
+    
+    // NEW simplified data for scroll-down version
+    const pinData = {
+        type,
+        authorId: window.appData.activeUserId,
+        createdAt: new Date().toISOString()
+        [cite_start]// Removed X and Y coordinates [cite: 1]
+    };
+    
+    // ... (keep your existing logic for gathering content/photos) ...
 
-            const pinData = {
-                type,
-                authorId: window.appData.activeUserId,
-                x: scrollX + (Math.random() * 200 - 100),
-                y: scrollY + (Math.random() * 200 - 100),
-                createdAt: new Date().toISOString()
-            };
+    const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
+    await setDoc(ref, pinData);
+    window.toggleModal('modal-create', false);
+};
 
             if (type === 'note') {
                 pinData.content = document.getElementById('note-text').value;
@@ -597,16 +601,16 @@ const app = initializeApp(firebaseConfig);
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id));
         };
 
-        function renderCanvas(pins) {
-            const surface = document.getElementById('canvas-surface');
-            surface.innerHTML = '';
-            pins.forEach(pin => {
-                const div = document.createElement('div');
-                div.className = 'pin-container group';
-                div.style.left = `${pin.x}px`;
-                div.style.top = `${pin.y}px`;
-                const authorName = window.appData.settings?.[pin.authorId]?.name || 'Unknown';
+        const surface = document.getElementById('canvas-surface');
+    surface.innerHTML = '';
 
+    // Sort pins by date so the newest ones are at the top
+    const sortedPins = pins.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    sortedPins.forEach(pin => {
+        const div = document.createElement('div');
+        div.className = 'pin-container group w-full flex justify-center';
+        
                 div.innerHTML = `
                     <div class="relative">
                         <div class="tape absolute top-[-10px] left-1/2 -translate-x-1/2 w-16 h-6 z-10 opacity-40"></div>
@@ -632,7 +636,6 @@ const app = initializeApp(firebaseConfig);
                     </div>
                 `;
                 surface.appendChild(div);
-                attachDrag(div, pin.id);
             });
             lucide.createIcons();
         }
@@ -758,6 +761,7 @@ window.centerCanvas = () => {
     </script>
 </body>
 </html>
+
 
 
 
