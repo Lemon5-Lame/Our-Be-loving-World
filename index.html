@@ -272,13 +272,6 @@
     </div>
 
     <!-- SETTINGS MODAL -->
-    <section>
-    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">User Names</label>
-    <div class="grid grid-cols-2 gap-4">
-        <input type="text" id="set-userA-name" class="p-4 rounded-xl border" placeholder="User A Name">
-        <input type="text" id="set-userB-name" class="p-4 rounded-xl border" placeholder="User B Name">
-    </div>
-</section>
     <div id="modal-settings" class="fixed inset-0 bg-black/80 z-[1600] flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-2xl rounded-3xl shadow-2xl text-black overflow-hidden flex flex-col max-h-[90vh]">
             <div class="p-8 border-b flex justify-between items-center">
@@ -677,8 +670,6 @@ const appId = "our-loving-world";
                     label: document.getElementById('set-date-label').value,
                     date: document.getElementById('set-date-value').value
                 },
-                userA: { name: document.getElementById('set-userA-name').value }, // Add this
-                userB: { name: document.getElementById('set-userB-name').value }, // Add this
                 pin: pin
             });
             window.toggleSettings(false);
@@ -696,6 +687,7 @@ const appId = "our-loving-world";
     </script>
 </body>
 </html>
+
 
 
 
