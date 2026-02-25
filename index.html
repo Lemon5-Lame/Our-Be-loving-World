@@ -8,6 +8,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        /* Add this at the end of your <style> section */
+#canvas-surface {
+    /* Creates a subtle dot grid so you can see when you are moving */
+    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+    background-size: 50px 50px;
+}
         .font-handwriting { font-family: 'Caveat', cursive; }
         .font-cursive-fancy { font-family: 'Dancing Script', cursive; }
         .font-typewriter { font-family: 'Courier Prime', monospace; }
@@ -186,6 +192,14 @@
         </div>
 
         <!-- Add Button -->
+        <div class="fixed bottom-32 left-1/2 -translate-x-1/2 z-[100]">
+    <button onclick="centerCanvas()" class="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 text-white p-4 rounded-full shadow-xl transition-all group">
+        <i data-lucide="maximize" class="group-hover:scale-110"></i>
+    </button>
+</div>
+
+<div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
+    <button onclick="toggleModal('modal-create', true)" ...>
         <div class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100]">
             <button onclick="toggleModal('modal-create', true)" class="bg-red-600 hover:bg-red-500 text-white flex items-center gap-3 px-8 py-4 rounded-full shadow-2xl transition-all hover:scale-110 group">
                 <i data-lucide="plus" class="group-hover:rotate-90 transition-transform"></i>
@@ -651,11 +665,57 @@ const app = initializeApp(firebaseConfig);
             document.getElementById('app-content').classList.add('hidden');
             document.getElementById('gatekeeper').classList.remove('hidden');
         };
+// --- Add these functions at the bottom of your script, before init(); ---
 
+window.centerCanvas = () => {
+    const canvas = document.getElementById('canvas');
+    const surface = document.getElementById('canvas-surface');
+    
+    // Smoothly scroll to the center of the 400x400 area
+    canvas.scrollTo({
+        left: (surface.offsetWidth - canvas.clientWidth) / 2,
+        top: (surface.offsetHeight - canvas.clientHeight) / 2,
+        behavior: 'smooth'
+    });
+};
+
+// Click-and-Drag to Pan logic
+let isPanning = false;
+let startPos = { x: 0, y: 0, scrollLeft: 0, scrollTop: 0 };
+
+const canvasElement = document.getElementById('canvas');
+
+canvasElement.addEventListener('mousedown', (e) => {
+    // Only pan if clicking the background, not a memory or button
+    if (e.target.id === 'canvas-surface' || e.target.id === 'canvas') {
+        isPanning = true;
+        canvasElement.style.cursor = 'grabbing';
+        startPos = {
+            x: e.clientX,
+            y: e.clientY,
+            scrollLeft: canvasElement.scrollLeft,
+            scrollTop: canvasElement.scrollTop
+        };
+    }
+});
+
+window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    const dx = e.clientX - startPos.x;
+    const dy = e.clientY - startPos.y;
+    canvasElement.scrollLeft = startPos.scrollLeft - dx;
+    canvasElement.scrollTop = startPos.scrollTop - dy;
+});
+
+window.addEventListener('mouseup', () => {
+    isPanning = false;
+    canvasElement.style.cursor = 'auto';
+})    ;
         init();
     </script>
 </body>
 </html>
+
 
 
 
