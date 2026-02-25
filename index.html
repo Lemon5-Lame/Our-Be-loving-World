@@ -575,53 +575,87 @@ const app = initializeApp(firebaseConfig);
     const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
     await setDoc(ref, pinData);
     window.toggleModal('modal-create', false);
+
+// Fill data based on type
+    if (type === 'note') {
+        pinData.content = document.getElementById('note-text').value;
+        pinData.color = document.getElementById('note-color').value;
+        pinData.fontFamily = document.getElementById('note-font').value;
+        pinData.fontSize = document.getElementById('note-size').value;
+        
+        // This return is now safe because it's inside a function
+        if (!pinData.content) return; 
+    } 
+    else {
+        pinData.content = window.appData.photoBase64;
+        pinData.caption = document.getElementById('photo-caption').value;
+        pinData.frameType = document.getElementById('photo-frame').value;
+        
+        if (!pinData.content) return;
+    }
+
+    try {
+        const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
+        await setDoc(ref, pinData);
+        
+        // Close modal and reset
+        window.toggleModal('modal-create', false);
+        document.getElementById('note-text').value = '';
+        window.clearPhoto();
+    } catch (err) {
+        console.error("Save failed:", err);
+    }
 };
-
-            if (type === 'note') {
-                pinData.content = document.getElementById('note-text').value;
-                pinData.color = document.getElementById('note-color').value;
-                pinData.fontFamily = document.getElementById('note-font').value;
-                pinData.fontSize = document.getElementById('note-size').value;
-                if (!pinData.content) return;
-            } else {
-                pinData.content = window.appData.photoBase64;
-                pinData.caption = document.getElementById('photo-caption').value;
-                pinData.frameType = document.getElementById('photo-frame').value;
-                if (!pinData.content) return;
-            }
-
-            const ref = doc(collection(db, 'artifacts', appId, 'public', 'data', 'ldr_pins'));
-            await setDoc(ref, pinData);
-            window.toggleModal('modal-create', false);
-            document.getElementById('note-text').value = '';
-            window.clearPhoto();
-        };
 
         window.deletePin = async (id) => {
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id));
         };
-
-        const surface = document.getElementById('canvas-surface');
+function renderCanvas(pins) {
+    const surface = document.getElementById('canvas-surface');
     surface.innerHTML = '';
 
-    // Sort pins by date so the newest ones are at the top
+    // Sort: Newest at the top
     const sortedPins = pins.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     sortedPins.forEach(pin => {
         const div = document.createElement('div');
-        div.className = 'pin-container group w-full flex justify-center';
+        div.className = 'pin-container w-full max-w-2xl flex flex-col items-center mb-12 px-4';
         
-                div.innerHTML = `
-                    <div class="relative">
-                        <div class="tape absolute top-[-10px] left-1/2 -translate-x-1/2 w-16 h-6 z-10 opacity-40"></div>
-                        ${pin.authorId === window.appData.activeUserId ? `
-                            <button onclick="deletePin('${pin.id}')" class="absolute -top-4 -right-4 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                                <i data-lucide="trash-2" style="width:14px; height:14px;"></i>
-                            </button>
-                        ` : ''}
-                        ${pin.type === 'note' ? `
-                            <div class="p-8 shadow-2xl min-w-[240px] max-w-[400px] bg-white border border-gray-100">
-                                <p class="leading-snug break-words ${pin.color === 'multi' ? 'color-running' : ''} font-${pin.fontFamily || 'handwriting'} ${pin.fontSize || 'text-4xl'}" 
+        const name = window.appData.settings?.[pin.authorId]?.name || 'Love';
+
+        if (pin.type === 'note') {
+            div.innerHTML = `
+                <div class="p-8 rounded shadow-xl w-full border-t-8" 
+                     style="background-color: ${pin.color || '#ffffff'}; border-color: rgba(0,0,0,0.1); font-family: ${pin.fontFamily || 'inherit'};">
+                    <p style="font-size: ${pin.fontSize || '1.5rem'}; line-height: 1.4;">${pin.content}</p>
+                    <div class="mt-6 flex justify-between items-center opacity-50 text-sm">
+                        <span>— ${name}</span>
+                        <button onclick="deletePin('${pin.id}')" class="hover:text-red-500 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else {
+            // Apply the selected frame style
+            const frameClass = pin.frameType === 'classic' ? 'border-[12px] border-white shadow-2xl' : 'border-[2px] border-gray-200 p-2 bg-white shadow-md';
+            div.innerHTML = `
+                <div class="${frameClass} w-full">
+                    <img src="${pin.content}" class="w-full h-auto block">
+                    ${pin.caption ? `<p class="mt-4 font-handwriting text-xl text-center text-gray-700">${pin.caption}</p>` : ''}
+                    <div class="mt-4 flex justify-between items-center text-[10px] uppercase tracking-widest text-gray-400">
+                        <span>${name} // ${new Date(pin.createdAt).toLocaleDateString()}</span>
+                        <button onclick="deletePin('${pin.id}')" class="hover:text-red-500">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+        surface.appendChild(div);
+    });
+    lucide.createIcons();
+} 
                                    style="color: ${pin.color !== 'multi' ? pin.color : 'inherit'}">
                                     ${pin.content}
                                 </p>
@@ -761,6 +795,7 @@ window.centerCanvas = () => {
     </script>
 </body>
 </html>
+
 
 
 
