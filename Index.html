@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Vault & Scrapbook</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;500;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-font: 'Quicksand', sans-serif; }
+        body { margin: 0; padding: 0; font-family: var(--primary-font); background-color: #f8f9fa; background-size: cover; background-attachment: fixed; }
+        #gatekeeper { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .heart-rain { position: absolute; top: -20px; pointer-events: none; animation: fall linear infinite; }
+        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
+        .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: rgba(255, 255, 255, 0.1); padding: 25px; border-radius: 20px; backdrop-filter: blur(10px); }
+        .key-btn { width: 70px; height: 70px; background: rgba(255,255,255,0.1); color: #fff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; transition: background 0.2s; }
+        .key-btn:active { background: rgba(255,255,255,0.3); }
+        .pin-dots { display: flex; gap: 15px; margin-bottom: 30px; }
+        .dot { width: 15px; height: 15px; border: 2px solid #fff; border-radius: 50%; }
+        .dot.active { background: #fff; box-shadow: 0 0 10px #fff; }
+        #main-content { display: none; min-height: 100vh; padding-top: 60px; }
+        .scrapbook-container { max-width: 800px; margin: 20px auto; padding: 20px; background: white; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .marquee-container { position: fixed; top: 0; width: 100%; background: white; z-index: 50; overflow: hidden; height: 40px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
+        .marquee-text { white-space: nowrap; display: inline-block; animation: marquee 20s linear infinite; font-weight: bold; color: #ff4d6d; }
+        @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay" class="fixed inset-0 bg-white z-[3000] flex flex-col items-center justify-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500"></div>
+        <p class="mt-4 text-pink-500 font-medium">Initializing Vault...</p>
+    </div>
+
+    <div id="gatekeeper">
+        <div class="mb-10 text-white text-xl font-bold tracking-widest uppercase">Enter Access Code</div>
+        <div class="pin-dots" id="pin-dots">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <div class="keypad-grid">
+            <div class="key-btn" onclick="pressKey('1')">1</div>
+            <div class="key-btn" onclick="pressKey('2')">2</div>
+            <div class="key-btn" onclick="pressKey('3')">3</div>
+            <div class="key-btn" onclick="pressKey('4')">4</div>
+            <div class="key-btn" onclick="pressKey('5')">5</div>
+            <div class="key-btn" onclick="pressKey('6')">6</div>
+            <div class="key-btn" onclick="pressKey('7')">7</div>
+            <div class="key-btn" onclick="pressKey('8')">8</div>
+            <div class="key-btn" onclick="pressKey('9')">9</div>
+            <div class="key-btn text-red-400" onclick="clearPin()">C</div>
+            <div class="key-btn" onclick="pressKey('0')">0</div>
+            <div class="key-btn" onclick="backspacePin()">⌫</div>
+        </div>
+        <p class="mt-8 text-white/30 text-sm">Default: 123456 | Visitor: 000000</p>
+    </div>
+
+    <div id="main-content">
+        <div class="marquee-container">
+            <div id="marquee-text" class="marquee-text">Welcome to your private memory space...</div>
+        </div>
+
+        <div class="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+            <button onclick="showNoteModal()" id="add-btn" class="bg-pink-500 text-white p-4 rounded-full shadow-xl hover:scale-110 transition">＋</button>
+            <button onclick="lockApp()" class="bg-gray-800 text-white p-4 rounded-full shadow-xl hover:scale-110 transition">🔒</button>
+        </div>
+
+        <div class="scrapbook-container" id="scrapbook-items">
+            <!-- Memories loaded here -->
+        </div>
+    </div>
+
+    <div id="note-modal" class="fixed inset-0 bg-black/60 hidden z-[200] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">New Memory</h3>
+            <textarea id="note-text" placeholder="Write something..." class="w-full p-3 border rounded-xl h-32 mb-4 focus:ring-2 ring-pink-500 outline-none"></textarea>
+            <div class="flex gap-2">
+                <button onclick="closeNoteModal()" class="flex-1 py-2 bg-gray-100 rounded-xl">Cancel</button>
+                <button onclick="saveMemory()" class="flex-1 py-2 bg-pink-500 text-white rounded-xl font-bold">Post</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global environment variables provided by the platform
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Fallback for local testing if needed */ };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Ensure appId is NEVER empty to prevent "even number of segments" error
+        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'default_vault_app';
+
+        let currentPin = "";
+        const MASTER_PIN = "123456";
+        const VISITOR_PIN = "000000";
+        let user = null;
+        let isVisitor = false;
+
+        // AUTHENTICATION (Rule 3)
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Auth error", e);
+            }
+        };
+
+        onAuthStateChanged(auth, (u) => {
+            user = u;
+            if (user) {
+                document.getElementById('loading-overlay').style.display = 'none';
+                startSync();
+            }
+        });
+
+        initAuth();
+
+        // FIRESTORE SYNC (Rule 1 & 2)
+        function startSync() {
+            if (!user) return;
+
+            // Public memories path: /artifacts/{appId}/public/data/memories
+            const memRef = collection(db, 'artifacts', appId, 'public', 'data', 'memories');
+            
+            onSnapshot(memRef, (snapshot) => {
+                const list = [];
+                snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
+                // Sort in memory (Rule 2)
+                list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                renderMemories(list);
+            }, (err) => console.error("Sync failed", err));
+        }
+
+        async function saveMemory() {
+            if (!user || isVisitor) return;
+            const text = document.getElementById('note-text').value;
+            if (!text.trim()) return;
+
+            const memRef = collection(db, 'artifacts', appId, 'public', 'data', 'memories');
+            await addDoc(memRef, {
+                text,
+                createdAt: new Date().toISOString(),
+                uid: user.uid
+            });
+
+            closeNoteModal();
+            document.getElementById('note-text').value = "";
+        }
+
+        function renderMemories(items) {
+            const container = document.getElementById('scrapbook-items');
+            container.innerHTML = items.length === 0 ? '<p class="text-center text-gray-400 py-10">Vault is empty.</p>' : '';
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-4 border-b last:border-0 hover:bg-gray-50 transition group relative";
+                div.innerHTML = `
+                    <p class="text-gray-800 whitespace-pre-wrap">${item.text}</p>
+                    <div class="mt-2 text-[10px] text-gray-400 uppercase tracking-widest">${new Date(item.createdAt).toLocaleString()}</div>
+                    ${!isVisitor ? `<button onclick="window.deleteItem('${item.id}')" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition">Delete</button>` : ''}
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.deleteItem = async (id) => {
+            if (isVisitor) return;
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'memories', id);
+            await deleteDoc(docRef);
+        };
+
+        // UI Logic
+        window.pressKey = (val) => {
+            if (currentPin.length < 6) {
+                currentPin += val;
+                updateDots();
+                if (currentPin.length === 6) checkPin();
+            }
+        };
+
+        window.clearPin = () => { currentPin = ""; updateDots(); };
+        window.backspacePin = () => { currentPin = currentPin.slice(0, -1); updateDots(); };
+        window.saveMemory = saveMemory;
+
+        function updateDots() {
+            const dots = document.querySelectorAll('.dot');
+            dots.forEach((d, i) => d.classList.toggle('active', i < currentPin.length));
+        }
+
+        function checkPin() {
+            if (currentPin === MASTER_PIN) {
+                isVisitor = false;
+                unlockVault();
+            } else if (currentPin === VISITOR_PIN) {
+                isVisitor = true;
+                unlockVault();
+            } else {
+                currentPin = "";
+                updateDots();
+                const g = document.getElementById('gatekeeper');
+                g.style.animation = "shake 0.3s";
+                setTimeout(() => g.style.animation = "", 300);
+            }
+        }
+
+        function unlockVault() {
+            document.getElementById('gatekeeper').style.display = 'none';
+            document.getElementById('main-content').style.display = 'block';
+            document.getElementById('add-btn').style.display = isVisitor ? 'none' : 'block';
+        }
+
+        window.lockApp = () => location.reload();
+        window.showNoteModal = () => document.getElementById('note-modal').classList.remove('hidden');
+        window.closeNoteModal = () => document.getElementById('note-modal').classList.add('hidden');
+
+        // Animation for Gatekeeper
+        const gk = document.getElementById('gatekeeper');
+        setInterval(() => {
+            const h = document.createElement('div');
+            h.className = 'heart-rain'; h.innerHTML = '❤️';
+            h.style.left = Math.random() * 100 + 'vw';
+            h.style.opacity = Math.random();
+            h.style.animationDuration = (Math.random() * 3 + 2) + 's';
+            gk.appendChild(h);
+            setTimeout(() => h.remove(), 5000);
+        }, 500);
+
+    </script>
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+</body>
+</html>
