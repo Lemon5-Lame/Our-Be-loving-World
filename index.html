@@ -8,36 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* Update CSS for bordered look and scrollbars */
-#app-content {
-    border: 8px solid #2a2a2a; /* Border from Gue.txt */
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-#canvas {
-    overflow: auto !important; /* Forces scrollbars if content exceeds size */
-}
-
-/* Map View Styling */
-#world-view {
-    height: 300px; /* Mini map size */
-    width: 100%;
-    position: relative;
-    border-bottom: 2px solid #2a2a2a;
-}
-#map { height: 100%; width: 100%; }
-        <div id="app-content" class="hidden">
-    <div id="world-view">
-        <div id="map"></div>
-    </div>
-    
-    <div id="canvas" class="flex-1 relative overflow-auto w-full h-full">
-        <div id="canvas-surface" class="w-[400vw] h-[400vh] relative">
-             </div>
-    </div>
-</div>
         .font-handwriting { font-family: 'Caveat', cursive; }
         .font-cursive-fancy { font-family: 'Dancing Script', cursive; }
         .font-typewriter { font-family: 'Courier Prime', monospace; }
@@ -138,19 +108,21 @@
     </div>
 
     <!-- Gatekeeper (PIN screen) -->
-    <div id="gatekeeper" class="fixed inset-0 z-[1500] flex items-center justify-center bg-black">
-    <canvas id="physics-canvas"></canvas>
-    <div id="keypad-anchor" class="relative z-10 bg-white/5 backdrop-blur-xl p-8 rounded-3xl border border-white/10 shadow-2xl w-72 md:w-80 text-center">
-        <h2 class="text-white font-fancy text-3xl mb-6">Enter Pin</h2>
-        <div id="pin-display" class="flex justify-center gap-3 mb-8">
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-            <div class="w-3 h-3 rounded-full border border-pink-400"></div>
-        </div>
-        <div class="grid grid-cols-3 gap-4" id="pin-pad">
+    <div id="gatekeeper" class="fixed inset-0 bg-black/95 z-[1500] flex items-center justify-center p-4 hidden">
+        <div id="gatekeeper-card" class="relative bg-[#0a0a0a] p-10 rounded-3xl border-2 border-[#d4af37]/30 w-full max-w-md text-center shadow-2xl transition-all">
+            <!-- Alert Message -->
+            <div id="gatekeeper-alert"></div>
+
+            <h2 class="font-vintage text-[#d4af37] text-2xl mb-8 tracking-[0.3em] uppercase">Private Vault</h2>
+            <div class="bg-black/50 p-6 rounded-2xl mb-10 flex justify-center gap-4 border border-[#d4af37]/20">
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-4" id="pin-pad">
                 <button class="btn-vault" onclick="pressPin('1')">1</button>
                 <button class="btn-vault" onclick="pressPin('2')">2</button>
                 <button class="btn-vault" onclick="pressPin('3')">3</button>
@@ -166,15 +138,7 @@
             </div>
         </div>
     </div>
-    <div id="info-form" class="hidden fixed inset-0 z-[1450] bg-[#0b0d10] flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-white/5 p-8 rounded-2xl border border-white/10 text-white space-y-4 shadow-2xl">
-        <h2 class="text-3xl font-fancy text-pink-400 text-center">Identity Check</h2>
-        <div><label class="opacity-50 text-[10px] uppercase font-bold">Full Name</label><input type="text" id="in-name" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 mt-1 outline-none"></div>
-        <div><label class="opacity-50 text-[10px] uppercase font-bold">Current City (Myanmar)</label><input type="text" id="in-city" placeholder="e.g. Yangon" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 mt-1 outline-none"></div>
-        <div><label class="opacity-50 text-[10px] uppercase font-bold">Birthday</label><input type="date" id="in-bday" class="w-full bg-white/5 border border-white/10 rounded-lg p-3 mt-1 outline-none"></div>
-        <button onclick="saveUserInfo()" class="w-full bg-pink-500 hover:bg-pink-600 py-4 rounded-xl font-bold">Open Your World</button>
-    </div>
-</div>
+
     <!-- Profile Selector -->
     <div id="profile-selector" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[1400] hidden">
         <div class="bg-white p-12 rounded-[2rem] shadow-2xl flex flex-col items-center gap-10">
@@ -358,14 +322,8 @@
 
     <script type="module">
 
-      // 1. Keep your existing imports
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-// 2. KEEP YOUR ORIGINAL CONFIG (The one with your real API Key)
 const firebaseConfig = {
- apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
+  apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
   authDomain: "our-loving-world.firebaseapp.com",
   projectId: "our-loving-world",
   storageBucket: "our-loving-world.firebasestorage.app",
@@ -373,23 +331,20 @@ const firebaseConfig = {
   appId: "1:796656224257:web:978c53abcee481cd129800",
   measurementId: "G-PDBJWPKWTW"
 };
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-// 3. INITIALIZE HERE (This fixes the "auth is not defined" error)
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app); 
-const db = getFirestore(app);
-const appId = "our-loving-world"; // Ensure this matches your Firestore collection structure
-
-// 4. Update your window.appData to include the new logic from Gue
-window.appData = {
-    user: null,
-    activeUserId: null,
-    settings: null,
-    currentPinInput: '',
-    createType: 'note',
-    photoBase64: null,
-    isDragging: false
-};
+        // APP STATE
+        window.appData = {
+            user: null,
+            activeUserId: null,
+            settings: null,
+            currentPinInput: '',
+            createType: 'note',
+            photoBase64: null,
+            isDragging: false
+        };
 
         async function init() {
             const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -693,8 +648,6 @@ window.appData = {
     </script>
 </body>
 </html>
-
-
 
 
 
