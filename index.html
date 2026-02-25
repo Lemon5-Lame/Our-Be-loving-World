@@ -189,6 +189,7 @@
         <!-- Infinite Canvas Surface -->
         <div id="canvas" class="flex-1 relative overflow-auto hide-scrollbar w-full h-[calc(100vh-64px)]">
             <div id="canvas-surface" class="w-[400vw] h-[400vh] relative">
+                <div style="position: absolute; top: 0; left: 0; width: 400vw; height: 10px; background: linear-gradient(to right, transparent, #d4af37, transparent); box-shadow: 0 0 15px #d4af37;"></div>
                 <!-- Memory Pins are rendered here -->
             </div>
         </div>
@@ -484,6 +485,15 @@ const appId = "our-loving-world";
             document.getElementById('profile-selector').classList.add('hidden');
             document.getElementById('app-content').classList.remove('hidden');
             const canvas = document.getElementById('canvas');
+            if (canvas) {
+
+                //Calculate the horizontal middle (X)
+                const centerX = (canvas.scrollWidth - window.innerWidth) / 2;
+
+                //Set Vertical (Y) to 0 so you are at the very top
+                canvas.scrollLeft = conterX;
+                canvas.scrollTop = 0;
+            }
             canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
             canvas.scrollTop = (canvas.scrollHeight - canvas.clientHeight) / 2;
         };
@@ -695,6 +705,7 @@ const appId = "our-loving-world";
     </script>
 </body>
 </html>
+
 
 
 
