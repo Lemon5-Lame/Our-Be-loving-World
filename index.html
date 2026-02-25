@@ -416,7 +416,31 @@ body { overflow: hidden; } /* Locks scrolling to vertical only */
     </div>
 
     <script type="module">
-//visitor mode>>>>>>>>
+// Ensure functions are defined immediately when the script loads
+window.enterApp = (isVisitMode) => {
+    const gatekeeper = document.getElementById('gatekeeper');
+    const appContent = document.getElementById('app-content');
+    const registerModal = document.getElementById('modal-register');
+
+    if (gatekeeper) gatekeeper.classList.add('hidden');
+    
+    if (isVisitMode) {
+        showGatekeeperAlert("Visitor Access", "bg-blue-500 text-white");
+        if (appContent) appContent.classList.remove('hidden');
+        // Hide add button for visitors to make it "Read Only"
+        const addBtn = document.querySelector('.fixed.bottom-10');
+        if (addBtn) addBtn.style.display = 'none';
+    } else {
+        // Owner Mode - Check Registration
+        const savedUser = localStorage.getItem('ldr_user_identity');
+        if (!savedUser) {
+            if (registerModal) registerModal.classList.remove('hidden');
+        } else {
+            if (appContent) appContent.classList.remove('hidden');
+        }
+    }
+};
+
 window.pressPin = (n) => {
     if (window.appData.currentPinInput.length >= 6) return;
     window.appData.currentPinInput += n;
@@ -424,24 +448,15 @@ window.pressPin = (n) => {
     
     if (window.appData.currentPinInput.length === 6) {
         const enteredPin = window.appData.currentPinInput;
-        const correctPin = window.appData.settings.pin;
+        const correctPin = window.appData.settings ? window.appData.settings.pin : '123456';
 
         if (enteredPin === "000000") {
-            // Visit Mode
-            showGatekeeperAlert("Visitor Access", "bg-blue-500 text-white");
-            setTimeout(() => {
-                window.enterApp(true);
-                window.clearPin();
-            }, 800);
+            window.enterApp(true); // Visitor
+            window.clearPin();
         } else if (enteredPin === correctPin) {
-            // Owner Mode
-            showGatekeeperAlert("Welcome Home", "bg-green-500 text-white");
-            setTimeout(() => {
-                window.enterApp(false);
-                window.clearPin();
-            }, 800);
+            window.enterApp(false); // Owner
+            window.clearPin();
         } else {
-            // Wrong Pin
             showGatekeeperAlert("Access Denied", "bg-red-600 text-white");
             window.clearPin();
         }
@@ -833,6 +848,7 @@ window.startTimeCounter = (startDateStr) => {
     </script>
 </body>
 </html>
+
 
 
 
