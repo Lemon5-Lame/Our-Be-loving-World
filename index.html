@@ -9,11 +9,56 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         /* Add this to your style section */
-#canvas-surface {
-    transition: transform 0.3s ease-out; /* Makes zooming smooth */
-    transform-origin: 0 0; /* Ensures it zooms from the top-left */
-    background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-    background-size: 100px 100px; /* Adds a visual grid so you can see movement */
+body { overflow: hidden; } /* Locks scrolling to vertical only */
+
+/* Raining Hearts Animation */
+.heart {
+    position: absolute;
+    top: -20px;
+    animation: fall linear forwards;
+    z-index: 1501;
+}
+@keyframes fall {
+    to { transform: translateY(100vh) rotate(360deg); }
+}
+
+/* Floating Birds for Title */
+.bird-container {
+    position: absolute;
+    top: 50px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Keypad blocks */
+.key-block {
+    background: black !important;
+    color: white !important;
+    border: 1px solid #333;
+    border-radius: 8px;
+    height: 60px;
+    font-size: 1.5rem;
+}
+.pin-dot.active { background: black !important; }
+
+/* Myanmar Mini-Map Polaroid Style */
+#myanmar-map-container {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    width: 150px;
+    background: white;
+    padding: 10px 10px 30px 10px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    transform: rotate(3deg);
+    z-index: 100;
 }
         /* Add this at the end of your <style> section */
 #canvas-surface {
@@ -121,54 +166,60 @@
     </div>
 
     <!-- Gatekeeper (PIN screen) -->
-    <div id="gatekeeper" class="fixed inset-0 bg-black/95 z-[1500] flex items-center justify-center p-4 hidden">
-        <div id="gatekeeper-card" class="relative bg-[#0a0a0a] p-10 rounded-3xl border-2 border-[#d4af37]/30 w-full max-w-md text-center shadow-2xl transition-all">
-            <!-- Alert Message -->
-            <div id="gatekeeper-alert"></div>
+    <div id="gatekeeper" class="fixed inset-0 bg-black z-[1500] flex flex-col items-center justify-center">
+    <div id="hearts-container"></div>
+    
+    <div class="bird-container font-vintage text-[#d4af37] text-xl">
+        <span>🕊️</span> <span>This is a Private Vault</span> <span>🕊️</span>
+    </div>
 
-            <h2 class="font-vintage text-[#d4af37] text-2xl mb-8 tracking-[0.3em] uppercase">Private Vault</h2>
-            <div class="bg-black/50 p-6 rounded-2xl mb-10 flex justify-center gap-4 border border-[#d4af37]/20">
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-                <div class="pin-dot w-4 h-4 rounded-full bg-gray-800"></div>
-            </div>
-            <div class="grid grid-cols-3 gap-4" id="pin-pad">
-                <button class="btn-vault" onclick="pressPin('1')">1</button>
-                <button class="btn-vault" onclick="pressPin('2')">2</button>
-                <button class="btn-vault" onclick="pressPin('3')">3</button>
-                <button class="btn-vault" onclick="pressPin('4')">4</button>
-                <button class="btn-vault" onclick="pressPin('5')">5</button>
-                <button class="btn-vault" onclick="pressPin('6')">6</button>
-                <button class="btn-vault" onclick="pressPin('7')">7</button>
-                <button class="btn-vault" onclick="pressPin('8')">8</button>
-                <button class="btn-vault" onclick="pressPin('9')">9</button>
-                <button class="btn-vault border-red-900 text-red-500 text-sm" onclick="clearPin()">CLR</button>
-                <button class="btn-vault" onclick="pressPin('0')">0</button>
-                <div class="flex items-center justify-center text-[#d4af37]/30"><i data-lucide="lock"></i></div>
-            </div>
+    <div class="bg-gray-400/20 p-8 rounded-3xl backdrop-blur-md w-80 text-center">
+        <div class="flex justify-center gap-2 mb-8">
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+            <div class="pin-dot w-4 h-4 rounded-full bg-white border border-black"></div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+            <button class="key-block" onclick="pressPin('1')">1</button>
+            <button class="key-block" onclick="pressPin('2')">2</button>
+            <button class="key-block" onclick="pressPin('3')">3</button>
+            <button class="key-block" onclick="pressPin('4')">4</button>
+            <button class="key-block" onclick="pressPin('5')">5</button>
+            <button class="key-block" onclick="pressPin('6')">6</button>
+            <button class="key-block" onclick="pressPin('7')">7</button>
+            <button class="key-block" onclick="pressPin('8')">8</button>
+            <button class="key-block" onclick="pressPin('9')">9</button>
+            <button class="key-block text-sm" onclick="clearPin()">CLR</button>
+            <button class="key-block" onclick="pressPin('0')">0</button>
+            <button class="key-block text-sm" onclick="backspacePin()">⌫</button>
         </div>
     </div>
+    <div class="mt-10 text-black font-bold">000000 for visit</div>
+</div>
 
     <!-- Profile Selector -->
-    <div id="profile-selector" class="fixed inset-0 bg-black/90 flex items-center justify-center z-[1400] hidden">
-        <div class="bg-white p-12 rounded-[2rem] shadow-2xl flex flex-col items-center gap-10">
-            <h2 class="font-vintage text-2xl uppercase tracking-widest text-gray-400">Identify Yourself</h2>
-            <div class="flex gap-12">
-                <button onclick="selectUser('userA')" class="group flex flex-col items-center gap-4">
-                    <div id="avatar-A" class="w-32 h-32 rounded-full flex items-center justify-center text-5xl border-8 bg-blue-50 border-blue-500 text-blue-500 transition-all group-hover:scale-110">?</div>
-                    <span id="name-A" class="font-vintage text-2xl font-bold text-gray-800">...</span>
-                </button>
-                <button onclick="selectUser('userB')" class="group flex flex-col items-center gap-4">
-                    <div id="avatar-B" class="w-32 h-32 rounded-full flex items-center justify-center text-5xl border-8 bg-orange-50 border-orange-500 text-orange-500 transition-all group-hover:scale-110">?</div>
-                    <span id="name-B" class="font-vintage text-2xl font-bold text-gray-800">...</span>
-                </button>
-            </div>
-        </div>
+    <div id="modal-register" class="fixed inset-0 bg-black/90 z-[1600] flex items-center justify-center hidden p-4">
+    <div class="bg-white p-8 rounded-2xl w-full max-w-md">
+        <h2 class="font-vintage text-2xl mb-4">Identify Yourself</h2>
+        <input id="reg-name" type="text" placeholder="Full Name" class="w-full p-2 border mb-2">
+        <input id="reg-place" type="text" placeholder="Place" class="w-full p-2 border mb-2">
+        <input id="reg-birthday" type="date" class="w-full p-2 border mb-2">
+        <select id="reg-gender" class="w-full p-2 border mb-4">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+        <button onclick="submitRegistration()" class="w-full bg-red-600 text-white p-3 rounded">Register</button>
     </div>
+</div>
 
+<div id="myanmar-map-container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/ed/Myanmar_location_map.svg/440px-Myanmar_location_map.svg.png" alt="Myanmar Map">
+    <p class="text-center font-handwriting mt-2">Home</p>
+</div>
     <!-- Main Content App -->
     <div id="app-content" class="min-h-screen w-full relative overflow-hidden hidden">
         <!-- Header -->
@@ -348,7 +399,49 @@
     </div>
 
     <script type="module">
+//visitor mode>>>>>>>>
+window.pressPin = (n) => {
+    if (window.appData.currentPinInput.length >= 6) return;
+    window.appData.currentPinInput += n;
+    updatePinUI();
+    
+    if (window.appData.currentPinInput.length === 6) {
+        if (window.appData.currentPinInput === "000000") {
+            enterApp(true); // Default Version
+        } else if (window.appData.currentPinInput === window.appData.settings.pin) {
+            enterApp(false); // Original Version
+        } else {
+            window.clearPin();
+            alert("Wrong Pin!");
+        }
+    }
+};
+        window.enterApp = (isVisitMode) => {
+    document.getElementById('gatekeeper').classList.add('hidden');
+    
+    if (isVisitMode) {
+        // Visitor Mode logic
+        alert("Entering as Visitor (Read Only)");
+        document.getElementById('app-content').classList.remove('hidden');
+        // Optional: Hide add buttons for visitors
+        document.getElementById('add-btn')?.classList.add('hidden'); 
+    } else {
+        // Normal Mode logic
+        document.getElementById('app-content').classList.remove('hidden');
+    }
+};
 
+function enterApp(isVisitMode) {
+    document.getElementById('gatekeeper').classList.add('hidden');
+    // Rule 2: Check if user is already registered in LocalStorage
+    const savedUser = localStorage.getItem('ldr_user_identity');
+    if (!savedUser && !isVisitMode) {
+        document.getElementById('modal-register').classList.remove('hidden');
+    } else {
+        document.getElementById('app-content').classList.remove('hidden');
+    }
+}
+        //firebae link ....... 
 const firebaseConfig = {
   apiKey: "AIzaSyChQmQTt9v0UyPjJPS9549DQUbkeq8cIVU",
   authDomain: "our-loving-world.firebaseapp.com",
@@ -491,6 +584,21 @@ const app = initializeApp(firebaseConfig);
             } else {
                 next.textContent = "No Event Set";
             }
+       function applyUIThemes() {
+    const s = window.appData.settings; [cite: 119]
+    document.body.className = `theme-${s.theme}`; [cite: 120]
+    
+    // Marquee and Color logic
+    const marquee = document.getElementById('marquee-text'); [cite: 120]
+    marquee.textContent = `${s.runningTitle} ${s.runningTitle} ${s.runningTitle}`; [cite: 120]
+    marquee.className = `running-title font-vintage font-bold text-lg ${s.titleColor === 'multi' ? 'color-running' : ''}`; [cite: 121]
+    
+    // TIME COUNTER TRIGGER
+    if (s.reminder && s.reminder.date) {
+        window.startTimeCounter(s.reminder.date); 
+    }
+}
+        
         }
 
         function updateProfileLabels() {
@@ -533,6 +641,7 @@ const app = initializeApp(firebaseConfig);
         };
 
         window.savePin = async () => {
+            
             const type = window.appData.createType;
             const canvas = document.getElementById('canvas');
             const scrollX = canvas.scrollLeft + (canvas.clientWidth / 2);
@@ -564,7 +673,14 @@ const app = initializeApp(firebaseConfig);
             window.toggleModal('modal-create', false);
             document.getElementById('note-text').value = '';
             window.clearPhoto();
-        };
+
+            async function sendTelegramNotification(author, type) {
+        const token = "YOUR_BOT_TOKEN";
+        const chatId = "YOUR_CHAT_ID";
+        const text = `🔔 Vault Update: ${author} added a new ${type}!`;
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${text}`);
+            }
+     };
 
         window.deletePin = async (id) => {
             await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'ldr_pins', id));
@@ -699,10 +815,35 @@ window.centerCanvas = () => {
         behavior: 'smooth'
     });
 };
+        // ... existing code ...
+
+// --- STEP 2: TIME COUNTER LOGIC ---
+window.startTimeCounter = (startDateStr) => {
+    if (window.dateInterval) clearInterval(window.dateInterval);
+
+    window.dateInterval = setInterval(() => {
+        const start = new Date(startDateStr);
+        const now = new Date();
+        const diff = now - start;
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const mins = Math.floor((diff / 1000 / 60) % 60);
+        const secs = Math.floor((diff / 1000) % 60);
+
+        const timerEl = document.getElementById('time-counter');
+        if (timerEl) {
+            timerEl.textContent = `${days}d ${hours}h ${mins}m ${secs}s`;
+        }
+    }, 1000);
+};
+
+// This is the last line of your script
         init();
     </script>
 </body>
 </html>
+
 
 
 
