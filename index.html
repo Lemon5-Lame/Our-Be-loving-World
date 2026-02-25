@@ -8,6 +8,31 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        /* Add to your existing <style> section */
+@media (max-width: 768px) {
+    /* Make the canvas surface feel more natural on mobile */
+    #canvas-surface {
+        width: 800vw; /* Increase "room" to move on small screens */
+        height: 800vh;
+    }
+
+    /* Increase button sizes for "fat fingers" */
+    .btn-vault {
+        padding: 1rem;
+        font-size: 1.25rem;
+    }
+
+    /* Adjust the memory pins so they don't take up the whole screen */
+    .pin-container {
+        transform: scale(0.8); 
+        transform-origin: center;
+    }
+}
+
+/* Ensure images and notes don't overflow the screen width */
+.pin-container img, .pin-container > div {
+    max-width: 85vw !important;
+}
         /* Add this to your style section */
 #canvas-surface {
     transition: transform 0.3s ease-out; /* Makes zooming smooth */
@@ -468,13 +493,15 @@ const app = initializeApp(firebaseConfig);
         }
 
         window.selectUser = (uid) => {
-            window.appData.activeUserId = uid;
-            document.getElementById('profile-selector').classList.add('hidden');
-            document.getElementById('app-content').classList.remove('hidden');
-            const canvas = document.getElementById('canvas');
-            canvas.scrollLeft = (canvas.scrollWidth - canvas.clientWidth) / 2;
-            canvas.scrollTop = (canvas.scrollHeight - canvas.clientHeight) / 2;
-        };
+    window.appData.activeUserId = uid;
+    document.getElementById('profile-selector').classList.add('hidden');
+    document.getElementById('app-content').classList.remove('hidden');
+    
+    // Give the browser a split second to render, then center
+    setTimeout(() => {
+        window.centerCanvas();
+    }, 100);
+};
 
         function applyUIThemes() {
             const s = window.appData.settings;
@@ -636,6 +663,34 @@ const app = initializeApp(firebaseConfig);
                 window.addEventListener('mousemove', onMove);
                 window.addEventListener('mouseup', onEnd);
             };
+            // --- Add this below your mouse panning logic ---
+
+// Touch Panning for Mobile
+canvasElement.addEventListener('touchstart', (e) => {
+    if (e.target.id === 'canvas-surface' || e.target.id === 'canvas') {
+        isPanning = true;
+        const touch = e.touches[0];
+        startPos = {
+            x: touch.clientX,
+            y: touch.clientY,
+            scrollLeft: canvasElement.scrollLeft,
+            scrollTop: canvasElement.scrollTop
+        };
+    }
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (!isPanning) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - startPos.x;
+    const dy = touch.clientY - startPos.y;
+    canvasElement.scrollLeft = startPos.scrollLeft - dx;
+    canvasElement.scrollTop = startPos.scrollTop - dy;
+}, { passive: true });
+
+window.addEventListener('touchend', () => {
+    isPanning = false;
+});
         }
 
         window.toggleSettings = (show) => {
@@ -703,6 +758,7 @@ window.centerCanvas = () => {
     </script>
 </body>
 </html>
+
 
 
 
