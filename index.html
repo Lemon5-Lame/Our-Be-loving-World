@@ -8,6 +8,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&family=Dancing+Script:wght@400;700&family=Special+Elite&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
+        #gatekeeper-alert {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.75rem 2rem;
+    border-radius: 9999px;
+    font-weight: bold;
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.1em;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity: 0;
+    white-space: nowrap;
+    z-index: 2000;
+}
+#gatekeeper-alert.show { top: 20px; opacity: 1; }
         /* Add this to your style section */
 body { overflow: hidden; } /* Locks scrolling to vertical only */
 
@@ -166,6 +182,7 @@ body { overflow: hidden; } /* Locks scrolling to vertical only */
     </div>
 
     <!-- Gatekeeper (PIN screen) -->
+    <div id="gatekeeper-alert"></div>
     <div id="gatekeeper" class="fixed inset-0 bg-black z-[1500] flex flex-col items-center justify-center">
     <div id="hearts-container"></div>
     
@@ -816,6 +833,7 @@ window.startTimeCounter = (startDateStr) => {
     </script>
 </body>
 </html>
+
 
 
 
