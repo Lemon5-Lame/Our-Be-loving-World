@@ -418,29 +418,51 @@ body { overflow: hidden; } /* Locks scrolling to vertical only */
     <script type="module">
 // Ensure functions are defined immediately when the script loads
 window.enterApp = (isVisitMode) => {
-    const gatekeeper = document.getElementById('gatekeeper');
-    const appContent = document.getElementById('app-content');
-    const registerModal = document.getElementById('modal-register');
-
-    if (gatekeeper) gatekeeper.classList.add('hidden');
+    document.getElementById('gatekeeper').classList.add('hidden');
     
     if (isVisitMode) {
-        showGatekeeperAlert("Visitor Access", "bg-blue-500 text-white");
-        if (appContent) appContent.classList.remove('hidden');
-        // Hide add button for visitors to make it "Read Only"
+        // Visitors go straight to the app without registering
+        document.getElementById('app-content').classList.remove('hidden');
         const addBtn = document.querySelector('.fixed.bottom-10');
-        if (addBtn) addBtn.style.display = 'none';
+        if (addBtn) addBtn.style.display = 'none'; // Read-only for visitors
     } else {
-        // Owner Mode - Check Registration
+        // Owners check for saved ID
         const savedUser = localStorage.getItem('ldr_user_identity');
         if (!savedUser) {
-            if (registerModal) registerModal.classList.remove('hidden');
+            document.getElementById('modal-register').classList.remove('hidden');
         } else {
-            if (appContent) appContent.classList.remove('hidden');
+            document.getElementById('app-content').classList.remove('hidden');
         }
     }
 };
+window.submitRegistration = () => {
+    const name = document.getElementById('reg-name').value;
+    const place = document.getElementById('reg-place').value;
+    const birthday = document.getElementById('reg-birthday').value;
+    const gender = document.getElementById('reg-gender').value;
 
+    if (!name || !place || !birthday) {
+        alert("Please fill in all identity fields!");
+        return;
+    }
+
+    const userData = {
+        name,
+        place,
+        birthday,
+        gender,
+        registeredAt: new Date().toISOString()
+    };
+
+    // Rule 2: Save to localStorage so they don't have to re-enter
+    localStorage.setItem('ldr_user_identity', JSON.stringify(userData));
+    
+    // Close modal and show app
+    document.getElementById('modal-register').classList.add('hidden');
+    document.getElementById('app-content').classList.remove('hidden');
+    
+    showGatekeeperAlert(`Welcome, ${name}`, "bg-green-500 text-white");
+};
 window.pressPin = (n) => {
     if (window.appData.currentPinInput.length >= 6) return;
     window.appData.currentPinInput += n;
@@ -848,6 +870,7 @@ window.startTimeCounter = (startDateStr) => {
     </script>
 </body>
 </html>
+
 
 
 
