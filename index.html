@@ -367,20 +367,38 @@ const firebaseConfig = {
   appId: "1:796656224257:web:978c53abcee481cd129800",
   measurementId: "G-PDBJWPKWTW"
 };
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      // 1. Keep your existing imports
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // APP STATE
-        window.appData = {
-            user: null,
-            activeUserId: null,
-            settings: null,
-            currentPinInput: '',
-            createType: 'note',
-            photoBase64: null,
-            isDragging: false
-        };
+// 2. KEEP YOUR ORIGINAL CONFIG (The one with your real API Key)
+const firebaseConfig = {
+  apiKey: "AIzaSyChQm...", 
+  authDomain: "our-loving-world.firebaseapp.com",
+  projectId: "our-loving-world",
+  storageBucket: "our-loving-world.firebasestorage.app",
+  messagingSenderId: "796656224257",
+  appId: "1:796656224257:web:978c53abcee481cd129800",
+  measurementId: "G-PDBJWPKWTW"
+};
+
+// 3. INITIALIZE HERE (This fixes the "auth is not defined" error)
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app); 
+const db = getFirestore(app);
+const appId = "our-loving-world"; // Ensure this matches your Firestore collection structure
+
+// 4. Update your window.appData to include the new logic from Gue
+window.appData = {
+    user: null,
+    activeUserId: null,
+    settings: null,
+    currentPinInput: '',
+    createType: 'note',
+    photoBase64: null,
+    isDragging: false
+};
 
         async function init() {
             const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -684,6 +702,7 @@ const firebaseConfig = {
     </script>
 </body>
 </html>
+
 
 
 
