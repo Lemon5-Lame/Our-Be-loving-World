@@ -81,35 +81,32 @@
         </div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, collection, onSnapshot, addDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+   <script type="module">
+    // Stick to the same CDN format for ALL imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, collection, onSnapshot, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global environment variables provided by the platform
-        import { initializeApp } from "firebase/app";
-        import { getAnalytics } from "firebase/analytics";
-        const firebaseConfig = {
-              apiKey: "AIzaSyCtVjvmJs-yY-K3zOiNu6oG2BkoQhQ1GO0",
-              authDomain: "lemon-36b44.firebaseapp.com",
-              projectId: "lemon-36b44",
-              storageBucket: "lemon-36b44.firebasestorage.app",
-              messagingSenderId: "775853083621",
-              appId: "1:775853083621:web:afada4ab5fc48ab1467d0c",
-              measurementId: "G-N6FM3YZ7TR"
-            };
+    // Your confirmed config
+    const firebaseConfig = {
+        apiKey: "AIzaSyCtVjvmJs-yY-K3zOiNu6oG2BkoQhQ1GO0",
+        authDomain: "lemon-36b44.firebaseapp.com",
+        projectId: "lemon-36b44",
+        storageBucket: "lemon-36b44.firebasestorage.app",
+        messagingSenderId: "775853083621",
+        appId: "1:775853083621:web:afada4ab5fc48ab1467d0c",
+        measurementId: "G-N6FM3YZ7TR"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
+    // Initialize
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    // Manual App ID for your vault logic
+    const appId = "lemon-36b44-vault";
 
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Fallback for local testing if needed */ };
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        npm install -g firebase-tools
-        // Ensure appId is NEVER empty to prevent "even number of segments" error
-        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'Our Secret Vault';
-
+    // ... rest of your code
         let currentPin = "";
         const MASTER_PIN = "123456";
         const VISITOR_PIN = "000000";
@@ -259,5 +256,6 @@
     </style>
 </body>
 </html>
+
 
 
