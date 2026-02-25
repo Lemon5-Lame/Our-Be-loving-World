@@ -562,9 +562,9 @@ const app = initializeApp(firebaseConfig);
     document.body.className = `theme-${s.theme}`; 
     
     // Marquee and Color logic
-    const marquee = document.getElementById('marquee-text'); [cite: 120]
-    marquee.textContent = `${s.runningTitle} ${s.runningTitle} ${s.runningTitle}`; [cite: 120]
-    marquee.className = `running-title font-vintage font-bold text-lg ${s.titleColor === 'multi' ? 'color-running' : ''}`; [cite: 121]
+    const marquee = document.getElementById('marquee-text'); 
+    marquee.textContent = `${s.runningTitle} ${s.runningTitle} ${s.runningTitle}`; 
+    marquee.className = `running-title font-vintage font-bold text-lg ${s.titleColor === 'multi' ? 'color-running' : ''}`; 
     
     // TIME COUNTER TRIGGER
     if (s.reminder && s.reminder.date) {
@@ -816,6 +816,7 @@ window.startTimeCounter = (startDateStr) => {
     </script>
 </body>
 </html>
+
 
 
 
